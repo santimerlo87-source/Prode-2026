@@ -127,7 +127,6 @@
                             if(ex) { ptsSumar = 3; tAp[i].ex += 1; tAn[i].ex += 1; } 
                             else if(gan) { ptsSumar = 1; }
                             
-                            // Punto extra por penales
                             if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
                                 ptsSumar += 1;
                             }
@@ -222,7 +221,7 @@
             const usaP = divP ? !divP.classList.contains('hidden') : false;
             const pen = usaP ? document.getElementById(`p-${id}`).value : "";
             if (gl === "" || gv === "") return alert("Poné goles.");
-            if (usaP && !pen) return alert("Elegí quién avanza.");
+            // Validaciones quitadas para que el penal sea opcional
             await setDoc(doc(db, "predicciones", `${currentUser}_${id}`), { user: currentUser, partidoId: id, gl: parseInt(gl), gv: parseInt(gv), usaPenales: usaP, penales: pen });
             alert("¡Guardado!"); location.reload();
         };
