@@ -17,6 +17,9 @@
         .proximo-badget { background: #eab308; color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
         .btn-penales-off { background: #334155; color: #94a3b8; }
         .btn-penales-on { background: #eab308; color: #000; font-weight: bold; }
+        /* Estilos nuevos para badges del mundial */
+        .badge-mundial { background: #0ea5e9; color: white; font-size: 8px; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+        .badge-clausura { background: #ec4899; color: white; font-size: 8px; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -27,6 +30,7 @@
         </div>
         <div class="flex gap-1 mb-6 overflow-x-auto pb-2 no-scrollbar">
             <button onclick="showTab('partidos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Partidos</button>
+            <button onclick="showTab('mundial')" class="flex-none bg-blue-700 px-3 py-2 rounded font-bold text-[9px] uppercase shadow-lg shadow-blue-500/20">Mundial 🌍</button>
             <button onclick="showTab('ranking')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Ranking</button>
             <button onclick="showTab('titulos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Títulos</button>
             <button onclick="showTab('aura')" class="flex-none bg-indigo-700 px-3 py-2 rounded font-bold text-[9px] uppercase shadow-lg shadow-indigo-500/20">AURA ✨</button>
@@ -38,14 +42,14 @@
     <div id="modal-preds" class="modal hidden">
         <div class="bg-slate-800 w-full max-w-sm rounded-xl p-6 border border-slate-600 shadow-2xl">
             <h3 id="modal-title" class="text-yellow-500 font-bold mb-4 uppercase text-xs">Pronósticos</h3>
-            <div id="modal-list" class="space-y-2 mb-6"></div>
+            <div id="modal-list" class="space-y-2 mb-6 max-h-[250px] overflow-y-auto no-scrollbar"></div>
             <button onclick="closeModal()" class="w-full bg-slate-600 p-2 rounded font-bold text-xs uppercase">Cerrar</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const p1 = "AIzaSyC4w9O"; const p2 = "eswyNimznnNL6s"; const p3 = "AUXAtrb80Kft9E";
         const firebaseConfig = { apiKey: p1+p2+p3, authDomain: "predicciones-2026.firebaseapp.com", projectId: "predicciones-2026", storageBucket: "predicciones-2026.firebasestorage.app", messagingSenderId: "226705370126", appId: "1:226705370126:web:04dfa828c687c9ee5ee05f" };
@@ -75,6 +79,11 @@
             const container = document.getElementById('tab-content');
             container.innerHTML = `<div class="text-center py-10 text-slate-500 italic text-[10px] uppercase">Cargando...</div>`;
 
+            // Configuración global de control del mundial
+            let mConfig = { llavesCerradas: false, real16:[], real8:[], real4:[], real2:[], realFinal:[], realCampeon:"" };
+            const mDoc = await getDoc(doc(db, "config_mundial", "global"));
+            if(mDoc.exists()) mConfig = mDoc.data();
+
             if (tab === 'partidos') {
                 const qP = await getDocs(collection(db, "partidos"));
                 const todos = qP.docs.map(d => ({id: d.id, ...d.data()}));
@@ -93,7 +102,8 @@
                     const yaVoto = misPreds[p.id];
                     const muroActivo = p.verOtros;
                     const usaP = yaVoto?.usaPenales;
-                    return `<div class="card ${yaVoto ? 'border-green-600/30' : ''}"><div class="flex justify-between items-start mb-2"><div class="flex flex-col"><span class="text-[9px] text-blue-400 font-bold uppercase">${p.torneo || 'TORNEO'}</span><span class="text-[8px] text-slate-500 font-bold uppercase">${p.instancia || 'FECHA'}</span></div>${muroActivo ? `<button onclick="verMuro('${p.id}', '${p.local} vs ${p.visitante}')" class="text-[8px] bg-yellow-500 px-2 py-1 rounded text-black font-black animate-pulse">VER OTROS 👁️</button>` : `<span class="text-[8px] text-green-500 italic font-bold">ABIERTO</span>`}</div><div class="flex justify-between items-center text-lg font-bold"><span>${p.local}</span><div class="flex gap-2"><input id="l-${p.id}" type="number" value="${yaVoto ? yaVoto.gl : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"> <input id="v-${p.id}" type="number" value="${yaVoto ? yaVoto.gv : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"></div><span>${p.visitante}</span></div>
+                    const esMundial = p.temporada === "Mundial";
+                    return `<div class="card ${yaVoto ? 'border-green-600/30' : ''}"><div class="flex justify-between items-start mb-2"><div class="flex flex-col"><span class="text-[9px] text-blue-400 font-bold uppercase">${p.torneo || 'TORNEO'}</span><span class="text-[8px] text-slate-500 font-bold uppercase">${p.instancia || 'FECHA'}</span><div class="mt-1">${esMundial ? '<span class="badge-mundial">MUNDIAL 🌍</span>':'<span class="badge-clausura">CLAUSURA 🏆</span>'}</div></div>${muroActivo ? `<button onclick="verMuro('${p.id}', '${p.local} vs ${p.visitante}')" class="text-[8px] bg-yellow-500 px-2 py-1 rounded text-black font-black animate-pulse">VER OTROS 👁️</button>` : `<span class="text-[8px] text-green-500 italic font-bold">ABIERTO</span>`}</div><div class="flex justify-between items-center text-lg font-bold"><span>${p.local}</span><div class="flex gap-2"><input id="l-${p.id}" type="number" value="${yaVoto ? yaVoto.gl : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"> <input id="v-${p.id}" type="number" value="${yaVoto ? yaVoto.gv : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"></div><span>${p.visitante}</span></div>
                     ${p.eliminacion && !muroActivo ? `
                         <button id="btn-p-${p.id}" onclick="togglePenalesInput('${p.id}')" class="w-full mt-2 p-1 rounded text-[10px] ${usaP ? 'btn-penales-on' : 'btn-penales-off'} uppercase">¿PENALES?</button>
                         <div id="div-p-${p.id}" class="${usaP ? '' : 'hidden'} mt-2 p-2 bg-slate-800/50 rounded-lg text-center">
@@ -109,13 +119,67 @@
                 container.innerHTML = html;
             }
 
+            if (tab === 'mundial') {
+                let uLlaveDoc = await getDoc(doc(db, "mundial_llaves", currentUser));
+                let uLlave = uLlaveDoc.exists() ? uLlaveDoc.data() : null;
+                let html = `<div class="titulo-seccion">Predicción de Llave Inicial 🌍</div>`;
+                
+                if(!mConfig.llavesCerradas) {
+                    html += `<div class="card bg-slate-900/50 border-blue-500/30">
+                        <p class="text-[10px] text-slate-400 uppercase mb-4 font-bold text-center">Cargá tus clasificados antes del partido inaugural (separalos por coma):</p>
+                        <div class="space-y-3 text-xs">
+                            <div><label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">A 16avos de Final (32 selecciones):</label>
+                            <input id="ll-16" type="text" class="w-full p-2 bg-slate-900 border border-slate-700 rounded text-xs" value="${uLlave?.inst16 ? uLlave.inst16.join(', ') : ''}" placeholder="Argentina, Brasil, Francia, Italia..."></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">A 8vos de Final (16 selecciones):</label>
+                            <input id="ll-8" type="text" class="w-full p-2 bg-slate-900 border border-slate-700 rounded text-xs" value="${uLlave?.inst8 ? uLlave.inst8.join(', ') : ''}"></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">A 4tos de Final (8 selecciones):</label>
+                            <input id="ll-4" type="text" class="w-full p-2 bg-slate-900 border border-slate-700 rounded text-xs" value="${uLlave?.inst4 ? uLlave.inst4.join(', ') : ''}"></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">A Semifinales (4 selecciones):</label>
+                            <input id="ll-2" type="text" class="w-full p-2 bg-slate-900 border border-slate-700 rounded text-xs" value="${uLlave?.inst2 ? uLlave.inst2.join(', ') : ''}"></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-slate-400 mb-1">A la Final (2 selecciones):</label>
+                            <input id="ll-fin" type="text" class="w-full p-2 bg-slate-900 border border-slate-700 rounded text-xs" value="${uLlave?.instFinal ? uLlave.instFinal.join(', ') : ''}"></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-yellow-500 mb-1">🏆 CAMPEÓN DEL MUNDO ENTRADA (+10 pts):</label>
+                            <input id="ll-cam" type="text" class="w-full p-2 bg-slate-900 border border-yellow-500/50 rounded text-sm font-bold text-yellow-500" value="${uLlave?.campeon ? uLlave.campeon : ''}"></div>
+                            <button onclick="saveLlave()" class="w-full mt-2 bg-blue-600 p-2 rounded font-bold uppercase text-xs">Guardar Mi Llave</button>
+                        </div>
+                    </div>`;
+                } else {
+                    html += `<div class="card bg-slate-800/40 border-green-600/20">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[9px] bg-red-900/60 text-red-400 px-2 py-1 rounded font-black uppercase">Veda de Llave Cerrada 🔒</span>
+                            <button onclick="verMuroLlaves()" class="text-[8px] bg-yellow-500 text-black font-black px-2 py-1 rounded">VER LLAVES 👁️</button>
+                        </div>
+                        <div class="text-xs space-y-2">
+                            <p class="truncate"><b>Tus 16avos:</b> ${uLlave?.inst16 ? uLlave.inst16.join(', ') : 'No ingresado'}</p>
+                            <p class="truncate"><b>Tus 8vos:</b> ${uLlave?.inst8 ? uLlave.inst8.join(', ') : 'No ingresado'}</p>
+                            <p class="truncate"><b>Tus 4tos:</b> ${uLlave?.inst4 ? uLlave.inst4.join(', ') : 'No ingresado'}</p>
+                            <p class="truncate"><b>Tus Semis:</b> ${uLlave?.inst2 ? uLlave.inst2.join(', ') : 'No ingresado'}</p>
+                            <p class="truncate"><b>Tu Final:</b> ${uLlave?.instFinal ? uLlave.instFinal.join(', ') : 'No ingresado'}</p>
+                            <p class="text-yellow-500 font-bold"><b>Tu Campeón:</b> ${uLlave?.campeon ? uLlave.campeon : 'No ingresado'}</p>
+                        </div>
+                    </div>`;
+                }
+                container.innerHTML = html;
+            }
+
             if (tab === 'ranking') {
                 const pSnap = await getDocs(collection(db, "partidos"));
                 const predSnap = await getDocs(collection(db, "predicciones"));
+                const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
+                
                 const partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
                 const preds = predSnap.docs.map(d => d.data());
+                
+                let llavesData = {};
+                llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
+
+                // Tu estructura de tablas base se mantiene exactamente igual
                 let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
                 let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
+                
+                // Estructuras paralelas para Clausura y Mundial
+                let tCl = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
+                let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
                 partidosFin.forEach(p => { 
                     preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
@@ -124,21 +188,57 @@
                             const ex = pr.gl == p.golesL && pr.gv == p.golesV; 
                             const gan = (pr.gl > pr.gv && p.golesL > p.golesV) || (pr.gl < pr.gv && p.golesL < p.golesV) || (pr.gl == pr.gv && p.golesL == p.golesV); 
                             let ptsSumar = 0;
-                            if(ex) { ptsSumar = 3; tAp[i].ex += 1; tAn[i].ex += 1; } 
+                            let esEx = 0;
+                            if(ex) { ptsSumar = 3; esEx = 1; } 
                             else if(gan) { ptsSumar = 1; }
                             
                             if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
                                 ptsSumar += 1;
                             }
                             
-                            tAp[i].pts += ptsSumar; tAn[i].pts += ptsSumar;
+                            if(p.temporada === "Mundial") {
+                                tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
+                            } else {
+                                // Suma al Apertura original, Anual, y al Clausura nuevo por separado
+                                tAp[i].pts += ptsSumar; tAp[i].ex += esEx;
+                                tAn[i].pts += ptsSumar; tAn[i].ex += esEx;
+                                tCl[i].pts += ptsSumar; tCl[i].ex += esEx;
+                            }
                         } 
                     }); 
                 });
+
+                // Cómputo de aciertos en la Llave del Mundial
+                USERS.forEach((u, idx) => {
+                    const ll = llavesData[u];
+                    if(ll) {
+                        if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
+                        if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
+                        if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
+                        if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
+                        if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
+                        if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) {
+                            tMun[idx].pts += 10;
+                        }
+                    }
+                });
+
                 const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
-                tAp.sort(sortF); tAn.sort(sortF);
+                tAp.sort(sortF); tAn.sort(sortF); tCl.sort(sortF); tMun.sort(sortF);
+
                 const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
-                container.innerHTML = `<div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div><div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div><div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div><div class="card bg-red-900/10 text-[10px] space-y-1"><p>• Exacto: +3 pts | Tendencia: +1 pto.</p><p>• Acierto Ganador Penales: +1 pto.</p></div>`;
+                
+                container.innerHTML = `
+                    <div class="titulo-seccion text-blue-400 border-blue-400">Mundial 2026 🌍</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tMun)}</div>
+                    <div class="titulo-seccion text-pink-500 border-pink-500">Clausura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tCl)}</div>
+                    <div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div>
+                    <div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div>
+                    <div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div>
+                    <div class="card bg-red-900/10 text-[10px] space-y-1">
+                        <p>• Exacto: +3 pts | Tendencia: +1 pto | Penales: +1 pto.</p>
+                        <p>• Puntos Llave Mundial: 16avos (+1), 8vos (+2), 4tos (+3), Semis (+4), Final (+5).</p>
+                        <p>• Campeón inicial acertado: <b>+10 pts</b>.</p>
+                    </div>`;
             }
 
             if (tab === 'titulos') {
@@ -156,16 +256,25 @@
                     <div class="card border-red-900/50 mb-6">
                         <h3 class="text-red-500 font-bold text-[10px] uppercase mb-4 tracking-widest">Nueva Fecha</h3>
                         <div class="grid grid-cols-2 gap-2 mb-2"><input id="newL" placeholder="Local" class="p-2 bg-slate-900 rounded text-sm text-white"><input id="newV" placeholder="Visitante" class="p-2 bg-slate-900 rounded text-sm text-white"></div>
-                        <div class="grid grid-cols-2 gap-2 mb-2"><input id="newTorneo" placeholder="Torneo" class="p-2 bg-slate-900 rounded text-[10px] text-white"><input id="newInst" placeholder="Instancia" class="p-2 bg-slate-900 rounded text-[10px] text-white"></div>
-                        <input id="newF" placeholder="Fecha/Hora" class="w-full p-2 mb-2 bg-slate-900 rounded text-[10px] text-slate-500">
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <input id="newTorneo" placeholder="Torneo" class="p-2 bg-slate-900 rounded text-[10px] text-white">
+                            <input id="newInst" placeholder="Instancia" class="p-2 bg-slate-900 rounded text-[10px] text-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <input id="newF" placeholder="Fecha/Hora" class="p-2 bg-slate-900 rounded text-[10px] text-slate-500">
+                            <select id="newTemp" class="p-2 bg-slate-900 rounded text-[10px] text-white">
+                                <option value="Clausura">Torneo Regular</option>
+                                <option value="Mundial">Mundial 🌍</option>
+                            </select>
+                        </div>
                         <div class="flex items-center gap-2 mb-4"><input type="checkbox" id="isElim"> <label class="text-[10px] uppercase font-bold text-red-400">Eliminación Directa</label></div>
                         <button onclick="addPartido()" class="w-full bg-red-600 p-2 rounded font-bold text-xs uppercase">Publicar</button>
                     </div>
-                    <div class="space-y-4">
+                    <div class="space-y-4 mb-6">
                         ${pendientes.map(p => `
                         <div class="card border-slate-700 bg-slate-900/50">
                             <div class="flex justify-between items-center mb-3">
-                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante}</div>
+                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante} ${p.temporada === 'Mundial' ? '(🌍)' : ''}</div>
                                 <button onclick="deletePartido('${p.id}')" class="text-[9px] bg-red-900/50 text-red-500 px-2 py-1 rounded">ELIMINAR 🗑️</button>
                             </div>
                             <div class="flex gap-1 mb-3">
@@ -184,6 +293,20 @@
                                 ` : ''}
                             </div>
                         </div>`).join('')}
+                    </div>
+                    <div class="card border-blue-900/50 bg-slate-900/40">
+                        <h3 class="text-blue-400 font-bold text-[10px] uppercase mb-3 tracking-widest">Control de Llaves del Mundial</h3>
+                        <button onclick="cerrarVedaMundial()" class="w-full ${mConfig.llavesCerradas ? 'bg-green-800 text-white' : 'bg-blue-600'} p-2 rounded font-bold text-[10px] uppercase mb-4">${mConfig.llavesCerradas ? 'Llaves Bloqueadas ✓' : 'Cerrar Llaves e Iniciar Mundial 🔒'}</button>
+                        <div class="space-y-2 text-[9px]">
+                            <label class="block text-slate-400 uppercase font-black">Carga Oficial de Clasificados Reales (Separados por coma):</label>
+                            <input id="adm-16" placeholder="Los 32 reales de 16avos" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs" value="${mConfig.real16 ? mConfig.real16.join(',') : ''}">
+                            <input id="adm-8" placeholder="Los 16 reales de 8vos" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs" value="${mConfig.real8 ? mConfig.real8.join(',') : ''}">
+                            <input id="adm-4" placeholder="Los 8 reales de 4tos" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs" value="${mConfig.real4 ? mConfig.real4.join(',') : ''}">
+                            <input id="adm-2" placeholder="Los 4 reales de Semis" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs" value="${mConfig.real2 ? mConfig.real2.join(',') : ''}">
+                            <input id="adm-fin" placeholder="Los 2 finalistas reales" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs" value="${mConfig.realFinal ? mConfig.realFinal.join(',') : ''}">
+                            <input id="adm-cam" placeholder="Campeón Oficial del Mundo 🏆" class="w-full p-2 bg-slate-900 border border-yellow-500 font-bold text-yellow-500 text-xs" value="${mConfig.realCampeon || ''}">
+                            <button onclick="saveGlobalMundial()" class="w-full bg-yellow-600 text-black font-black p-2 rounded uppercase mt-2">Guardar Resultados del Cuadro</button>
+                        </div>
                     </div>`;
             }
         };
@@ -212,7 +335,6 @@
             if(confirm("¿Borrar partido?")) { await deleteDoc(doc(db, "partidos", id)); showTab('admin'); }
         };
 
-        window.closeModal = () => document.getElementById('modal-preds').classList.add('hidden');
         window.toggleMuro = async (id, val) => { await updateDoc(doc(db, "partidos", id), { verOtros: val }); showTab('admin'); };
         
         window.savePred = async (id) => {
@@ -221,7 +343,6 @@
             const usaP = divP ? !divP.classList.contains('hidden') : false;
             const pen = usaP ? document.getElementById(`p-${id}`).value : "";
             if (gl === "" || gv === "") return alert("Poné goles.");
-            // Validaciones quitadas para que el penal sea opcional
             await setDoc(doc(db, "predicciones", `${currentUser}_${id}`), { user: currentUser, partidoId: id, gl: parseInt(gl), gv: parseInt(gv), usaPenales: usaP, penales: pen });
             alert("¡Guardado!"); location.reload();
         };
@@ -230,8 +351,9 @@
             const l = document.getElementById('newL').value; const v = document.getElementById('newV').value;
             const f = document.getElementById('newF').value; const t = document.getElementById('newTorneo').value;
             const i = document.getElementById('newInst').value; const elim = document.getElementById('isElim').checked;
+            const temp = document.getElementById('newTemp').value; // Toma si es Clausura o Mundial
             if(!l || !v) return alert("Equipos obligatorios.");
-            await addDoc(collection(db, "partidos"), { local: l, visitante: v, fecha: f, torneo: t, instancia: i, finalizado: false, verOtros: false, esProximo: false, eliminacion: elim, golesL: 0, golesV: 0, huboPenales: false, ganadorPenales: "" });
+            await addDoc(collection(db, "partidos"), { local: l, visitante: v, fecha: f, torneo: t, instancia: i, finalizado: false, verOtros: false, esProximo: false, eliminacion: elim, golesL: 0, golesV: 0, huboPenales: false, ganadorPenales: "", temporada: temp });
             showTab('admin');
         };
 
@@ -241,6 +363,52 @@
             const hp = esElim ? document.getElementById(`hP-${id}`).checked : false;
             const gp = esElim && hp ? document.getElementById(`resP-${id}`).value : "";
             await updateDoc(doc(db, "partidos", id), { golesL: parseInt(gl), golesV: parseInt(gv), finalizado: true, verOtros: true, esProximo: false, huboPenales: hp, ganadorPenales: gp });
+            showTab('admin');
+        };
+
+        /* Nuevas funciones lógicas añadidas exclusivamente para el Mundial */
+        window.saveLlave = async () => {
+            const cleanArray = (id) => document.getElementById(id).value.split(',').map(x => x.trim()).filter(x => x !== "");
+            const inst16 = cleanArray('ll-16'); const inst8 = cleanArray('ll-8');
+            const inst4 = cleanArray('ll-4'); const inst2 = cleanArray('ll-2');
+            const instFinal = cleanArray('ll-fin'); const campeon = document.getElementById('ll-cam').value.trim();
+
+            if(!campeon) return alert("Pone al menos tu candidato a campeón.");
+            await setDoc(doc(db, "mundial_llaves", currentUser), { inst16, inst8, inst4, inst2, instFinal, campeon });
+            alert("¡Tu llave mundialista fue guardada con éxito!"); showTab('mundial');
+        };
+
+        window.verMuroLlaves = async () => {
+            const q = await getDocs(collection(db, "mundial_llaves"));
+            const lista = document.getElementById('modal-list');
+            document.getElementById('modal-title').innerText = "CUADROS DEL GRUPO 🌍";
+            lista.innerHTML = "";
+            q.forEach(d => {
+                const data = d.data();
+                lista.innerHTML += `<div class="bg-slate-900 p-3 rounded text-xs border border-slate-700 space-y-1">
+                    <div class="text-yellow-500 font-bold text-sm border-b border-slate-800 pb-1">${d.id.toUpperCase()}</div>
+                    <p><b class="text-white">Campeón:</b> ${data.campeon || '---'}</p>
+                    <p class="text-[10px] text-slate-400 truncate"><b>Finalistas:</b> ${data.instFinal ? data.instFinal.join(', ') : ''}</p>
+                </div>`;
+            });
+            document.getElementById('modal-preds').classList.remove('hidden');
+        };
+
+        window.cerrarVedaMundial = async () => {
+            if(confirm("¿Cerrar veda total? Nadie podrá modificar su cuadro inicial.")) {
+                await setDoc(doc(db, "config_mundial", "global"), { llavesCerradas: true }, { merge: true });
+                showTab('admin');
+            }
+        };
+
+        window.saveGlobalMundial = async () => {
+            const cleanArray = (id) => document.getElementById(id).value.split(',').map(x => x.trim()).filter(x => x !== "");
+            await setDoc(doc(db, "config_mundial", "global"), {
+                real16: cleanArray('adm-16'), real8: cleanArray('adm-8'),
+                real4: cleanArray('adm-4'), real2: cleanArray('adm-2'),
+                realFinal: cleanArray('adm-fin'), realCampeon: document.getElementById('adm-cam').value.trim()
+            }, { merge: true });
+            alert("Cuadro Oficial del Mundial Guardado. ¡Rankings actualizados!");
             showTab('admin');
         };
 
