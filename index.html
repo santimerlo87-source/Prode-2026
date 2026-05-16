@@ -1,256 +1,511 @@
 <!DOCTYPE html>
+
 <html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prode Amigos 2026 🏆</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; }
-        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
-        input { color: white; }
-        input:disabled { opacity: 0.5; cursor: not-allowed; }
-        .titulo-seccion { color: #eab308; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; margin-bottom: 0.75rem; border-left: 4px solid #eab308; padding-left: 8px; }
-        .modal { background: rgba(0,0,0,0.9); position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none;  scrollbar-width: none; }
-        .proximo-badget { background: #eab308; color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .btn-penales-off { background: #334155; color: #94a3b8; }
-        .btn-penales-on { background: #eab308; color: #000; font-weight: bold; }
-    </style>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Prode Amigos 2026 🏆</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+
+        body { background: #0f172a; color: white; font-family: sans-serif; }
+
+        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+
+        input { color: white; }
+
+        input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .titulo-seccion { color: #eab308; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; margin-bottom: 0.75rem; border-left: 4px solid #eab308; padding-left: 8px; }
+
+        .modal { background: rgba(0,0,0,0.9); position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+
+        .no-scrollbar { -ms-overflow-style: none;  scrollbar-width: none; }
+
+        .proximo-badget { background: #eab308; color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
+
+        .btn-penales-off { background: #334155; color: #94a3b8; }
+
+        .btn-penales-on { background: #eab308; color: #000; font-weight: bold; }
+
+    </style>
+
 </head>
+
 <body>
-    <div id="app" class="max-w-md mx-auto p-4">
-        <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-            <h1 class="text-2xl font-bold text-yellow-500 italic">PRODE 2026</h1>
-            <div id="userInfo" class="text-right text-[10px] text-slate-400 uppercase tracking-tighter"></div>
-        </div>
-        <div class="flex gap-1 mb-6 overflow-x-auto pb-2 no-scrollbar">
-            <button onclick="showTab('partidos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Partidos</button>
-            <button onclick="showTab('ranking')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Ranking</button>
-            <button onclick="showTab('titulos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Títulos</button>
-            <button onclick="showTab('aura')" class="flex-none bg-indigo-700 px-3 py-2 rounded font-bold text-[9px] uppercase shadow-lg shadow-indigo-500/20">AURA ✨</button>
-            <button id="adminBtn" onclick="showTab('admin')" class="hidden flex-none bg-red-600 px-3 py-2 rounded font-bold text-[9px] uppercase">Admin</button>
-        </div>
-        <div id="tab-content" class="min-h-[200px]"></div>
-    </div>
 
-    <div id="modal-preds" class="modal hidden">
-        <div class="bg-slate-800 w-full max-w-sm rounded-xl p-6 border border-slate-600 shadow-2xl">
-            <h3 id="modal-title" class="text-yellow-500 font-bold mb-4 uppercase text-xs">Pronósticos</h3>
-            <div id="modal-list" class="space-y-2 mb-6"></div>
-            <button onclick="closeModal()" class="w-full bg-slate-600 p-2 rounded font-bold text-xs uppercase">Cerrar</button>
-        </div>
-    </div>
+    <div id="app" class="max-w-md mx-auto p-4">
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
 
-        const p1 = "AIzaSyC4w9O"; const p2 = "eswyNimznnNL6s"; const p3 = "AUXAtrb80Kft9E";
-        const firebaseConfig = { apiKey: p1+p2+p3, authDomain: "predicciones-2026.firebaseapp.com", projectId: "predicciones-2026", storageBucket: "predicciones-2026.firebasestorage.app", messagingSenderId: "226705370126", appId: "1:226705370126:web:04dfa828c687c9ee5ee05f" };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+            <h1 class="text-2xl font-bold text-yellow-500 italic">PRODE 2026</h1>
 
-        const PUNTOS_BASE = { "Kako": { pts: 57, ex: 10 }, "Esculapio": { pts: 54, ex: 6 }, "Popa": { pts: 50, ex: 8 }, "Fer": { pts: 49, ex: 8 }, "Bauti": { pts: 22, ex: 5 } };
-        const USERS = Object.keys(PUNTOS_BASE);
-        let currentUser = localStorage.getItem('prode_user');
+            <div id="userInfo" class="text-right text-[10px] text-slate-400 uppercase tracking-tighter"></div>
 
-        window.login = (name) => { localStorage.setItem('prode_user', name); location.reload(); };
+        </div>
 
-        window.togglePenalesInput = (id) => {
-            const div = document.getElementById(`div-p-${id}`);
-            const btn = document.getElementById(`btn-p-${id}`);
-            if (div.classList.contains('hidden')) {
-                div.classList.remove('hidden');
-                btn.className = "w-full mt-2 p-1 rounded text-[10px] btn-penales-on uppercase";
-            } else {
-                div.classList.add('hidden');
-                btn.className = "w-full mt-2 p-1 rounded text-[10px] btn-penales-off uppercase";
-                document.getElementById(`p-${id}`).value = "";
-            }
-        };
+        <div class="flex gap-1 mb-6 overflow-x-auto pb-2 no-scrollbar">
 
-        window.showTab = async (tab) => {
-            const container = document.getElementById('tab-content');
-            container.innerHTML = `<div class="text-center py-10 text-slate-500 italic text-[10px] uppercase">Cargando...</div>`;
+            <button onclick="showTab('partidos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Partidos</button>
 
-            if (tab === 'partidos') {
-                const qP = await getDocs(collection(db, "partidos"));
-                const todos = qP.docs.map(d => ({id: d.id, ...d.data()}));
-                const proximos = todos.filter(p => !p.finalizado);
-                const destacado = todos.find(p => p.esProximo && !p.finalizado);
-                const qPre = await getDocs(query(collection(db, "predicciones"), where("user", "==", currentUser)));
-                const misPreds = {};
-                qPre.forEach(d => { misPreds[d.data().partidoId] = d.data(); });
+            <button onclick="showTab('ranking')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Ranking</button>
 
-                let html = "";
-                if (destacado) {
-                    html += `<div class="card border-yellow-500/50 bg-yellow-500/5 mb-6"><div class="flex justify-between items-center mb-2"><span class="proximo-badget">Próximo Partido</span><span class="text-[10px] text-slate-400 font-bold uppercase">${destacado.fecha || ''}</span></div><div class="text-center text-[10px] text-yellow-600 font-bold uppercase mb-1">${destacado.torneo || ''} - ${destacado.instancia || ''}</div><div class="text-center text-xl font-black text-yellow-500 italic uppercase">${destacado.local} vs ${destacado.visitante}</div></div><div class="titulo-seccion">Pronosticar</div>`;
-                }
+            <button onclick="showTab('titulos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Títulos</button>
 
-                html += proximos.map(p => {
-                    const yaVoto = misPreds[p.id];
-                    const muroActivo = p.verOtros;
-                    const usaP = yaVoto?.usaPenales;
-                    return `<div class="card ${yaVoto ? 'border-green-600/30' : ''}"><div class="flex justify-between items-start mb-2"><div class="flex flex-col"><span class="text-[9px] text-blue-400 font-bold uppercase">${p.torneo || 'TORNEO'}</span><span class="text-[8px] text-slate-500 font-bold uppercase">${p.instancia || 'FECHA'}</span></div>${muroActivo ? `<button onclick="verMuro('${p.id}', '${p.local} vs ${p.visitante}')" class="text-[8px] bg-yellow-500 px-2 py-1 rounded text-black font-black animate-pulse">VER OTROS 👁️</button>` : `<span class="text-[8px] text-green-500 italic font-bold">ABIERTO</span>`}</div><div class="flex justify-between items-center text-lg font-bold"><span>${p.local}</span><div class="flex gap-2"><input id="l-${p.id}" type="number" value="${yaVoto ? yaVoto.gl : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"> <input id="v-${p.id}" type="number" value="${yaVoto ? yaVoto.gv : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"></div><span>${p.visitante}</span></div>
-                    ${p.eliminacion && !muroActivo ? `
-                        <button id="btn-p-${p.id}" onclick="togglePenalesInput('${p.id}')" class="w-full mt-2 p-1 rounded text-[10px] ${usaP ? 'btn-penales-on' : 'btn-penales-off'} uppercase">¿PENALES?</button>
-                        <div id="div-p-${p.id}" class="${usaP ? '' : 'hidden'} mt-2 p-2 bg-slate-800/50 rounded-lg text-center">
-                            <select id="p-${p.id}" class="bg-slate-900 text-[10px] p-1 rounded border border-slate-600 text-white">
-                                <option value="">- Quién avanza -</option>
-                                <option value="L" ${yaVoto?.penales === 'L' ? 'selected' : ''}>${p.local}</option>
-                                <option value="V" ${yaVoto?.penales === 'V' ? 'selected' : ''}>${p.visitante}</option>
-                            </select>
-                        </div>
-                    ` : ''}
-                    ${!muroActivo ? `<button onclick="savePred('${p.id}')" class="w-full mt-4 ${yaVoto ? 'bg-green-700' : 'bg-yellow-600'} p-2 rounded text-xs font-bold uppercase transition">${yaVoto ? 'Actualizar ✓' : 'Guardar'}</button>` : `<div class="w-full mt-4 bg-slate-800 p-2 rounded text-[10px] text-center text-slate-500 font-bold uppercase border border-slate-700 italic">Votación cerrada</div>`}</div>`;
-                }).join('') || "<p class='text-center py-10 text-slate-500 text-[10px] uppercase font-bold'>No hay partidos</p>";
-                container.innerHTML = html;
-            }
+            <button onclick="showTab('aura')" class="flex-none bg-indigo-700 px-3 py-2 rounded font-bold text-[9px] uppercase shadow-lg shadow-indigo-500/20">AURA ✨</button>
 
-            if (tab === 'ranking') {
-                const pSnap = await getDocs(collection(db, "partidos"));
-                const predSnap = await getDocs(collection(db, "predicciones"));
-                const partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
-                const preds = predSnap.docs.map(d => d.data());
-                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
-                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
-                
-                partidosFin.forEach(p => { 
-                    preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
-                        const i = USERS.indexOf(pr.user); 
-                        if (i !== -1) { 
-                            const ex = pr.gl == p.golesL && pr.gv == p.golesV; 
-                            const gan = (pr.gl > pr.gv && p.golesL > p.golesV) || (pr.gl < pr.gv && p.golesL < p.golesV) || (pr.gl == pr.gv && p.golesL == p.golesV); 
-                            let ptsSumar = 0;
-                            if(ex) { ptsSumar = 3; tAp[i].ex += 1; tAn[i].ex += 1; } 
-                            else if(gan) { ptsSumar = 1; }
-                            
-                            if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
-                                ptsSumar += 1;
-                            }
-                            
-                            tAp[i].pts += ptsSumar; tAn[i].pts += ptsSumar;
-                        } 
-                    }); 
-                });
-                const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
-                tAp.sort(sortF); tAn.sort(sortF);
-                const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
-                container.innerHTML = `<div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div><div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div><div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div><div class="card bg-red-900/10 text-[10px] space-y-1"><p>• Exacto: +3 pts | Tendencia: +1 pto.</p><p>• Acierto Ganador Penales: +1 pto.</p></div>`;
-            }
+            <button id="adminBtn" onclick="showTab('admin')" class="hidden flex-none bg-red-600 px-3 py-2 rounded font-bold text-[9px] uppercase">Admin</button>
 
-            if (tab === 'titulos') {
-                container.innerHTML = `<div class="titulo-seccion">Títulos</div><div class="card bg-slate-800/40 text-sm space-y-2 mb-6 shadow-inner"><div class="flex justify-between border-b border-slate-700/50 pb-2"><span>Esculapio</span><b class="text-yellow-500">3 🏆</b></div>${USERS.filter(u => u !== "Esculapio").map(u => `<div class="flex justify-between text-slate-400"><span>${u}</span><b>0</b></div>`).join('')}</div><div class="titulo-seccion">Historia</div><div class="card bg-slate-800/40 text-[11px] space-y-2 mb-6 shadow-inner"><div class="flex justify-between border-b border-slate-700/30 pb-1"><span>Apertura 2025</span><b class="text-yellow-500">Esculapio 👑</b></div><div class="flex justify-between border-b border-slate-700/30 pb-1"><span>Clausura 2025</span><b class="text-yellow-500">Esculapio 👑</b></div><div class="flex justify-between"><span>Anual 2025</span><b class="text-yellow-500">Esculapio 👑</b></div></div><div class="titulo-seccion text-red-500 border-red-500 uppercase tracking-tighter">El Cementerio</div><div class="card bg-red-900/10 flex justify-between text-sm items-center"><span>Descenso 2025</span><b class="text-red-500 uppercase font-black">Bauti 🅱️</b></div>`;
-            }
+        </div>
 
-            if (tab === 'aura') {
-                container.innerHTML = `<div class="titulo-seccion italic text-indigo-400 border-indigo-400">EL AURA ✨</div><div class="card p-0 overflow-hidden border-indigo-500/40"><img src="https://media.tycsports.com/files/2026/04/19/942275/paredes-topo-gigio_1440x810_wmk.webp" class="w-full block"><div class="p-4 bg-slate-900"><p class="text-center text-xs font-bold italic text-indigo-300 uppercase tracking-widest leading-relaxed">"Donde hay AURA, el resto solo mira"</p></div></div>`;
-            }
+        <div id="tab-content" class="min-h-[200px]"></div>
 
-            if (tab === 'admin') {
-                const q = await getDocs(collection(db, "partidos"));
-                const pendientes = q.docs.map(d => ({id: d.id, ...d.data()})).filter(p => !p.finalizado);
-                container.innerHTML = `
-                    <div class="card border-red-900/50 mb-6">
-                        <h3 class="text-red-500 font-bold text-[10px] uppercase mb-4 tracking-widest">Nueva Fecha</h3>
-                        <div class="grid grid-cols-2 gap-2 mb-2"><input id="newL" placeholder="Local" class="p-2 bg-slate-900 rounded text-sm text-white"><input id="newV" placeholder="Visitante" class="p-2 bg-slate-900 rounded text-sm text-white"></div>
-                        <div class="grid grid-cols-2 gap-2 mb-2"><input id="newTorneo" placeholder="Torneo" class="p-2 bg-slate-900 rounded text-[10px] text-white"><input id="newInst" placeholder="Instancia" class="p-2 bg-slate-900 rounded text-[10px] text-white"></div>
-                        <input id="newF" placeholder="Fecha/Hora" class="w-full p-2 mb-2 bg-slate-900 rounded text-[10px] text-slate-500">
-                        <div class="flex items-center gap-2 mb-4"><input type="checkbox" id="isElim"> <label class="text-[10px] uppercase font-bold text-red-400">Eliminación Directa</label></div>
-                        <button onclick="addPartido()" class="w-full bg-red-600 p-2 rounded font-bold text-xs uppercase">Publicar</button>
-                    </div>
-                    <div class="space-y-4">
-                        ${pendientes.map(p => `
-                        <div class="card border-slate-700 bg-slate-900/50">
-                            <div class="flex justify-between items-center mb-3">
-                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante}</div>
-                                <button onclick="deletePartido('${p.id}')" class="text-[9px] bg-red-900/50 text-red-500 px-2 py-1 rounded">ELIMINAR 🗑️</button>
-                            </div>
-                            <div class="flex gap-1 mb-3">
-                                <button onclick="toggleMuro('${p.id}', ${!p.verOtros})" class="flex-1 ${p.verOtros ? 'bg-slate-600' : 'bg-blue-600'} p-2 rounded text-[9px] font-bold uppercase">${p.verOtros ? 'Abrir Votos' : 'Cerrar Votos'}</button>
-                                <button onclick="setProximo('${p.id}')" class="flex-1 ${p.esProximo ? 'bg-yellow-600 text-black' : 'bg-slate-700 text-yellow-500'} p-2 rounded text-[9px] font-bold uppercase">${p.esProximo ? '★ Destacado' : 'Destacar'}</button>
-                            </div>
-                            <div class="flex flex-col gap-2">
-                                <div class="flex gap-2">
-                                    <input id="resL-${p.id}" type="number" placeholder="L" class="w-1/4 p-2 bg-slate-900 rounded text-center border border-slate-700 text-sm font-bold text-white"><input id="resV-${p.id}" type="number" placeholder="V" class="w-1/4 p-2 bg-slate-900 rounded text-center border border-slate-700 text-sm font-bold text-white"><button onclick="finalizarPartido('${p.id}', ${p.eliminacion})" class="flex-1 bg-green-700 rounded text-[10px] font-bold uppercase">Cerrar</button>
-                                </div>
-                                ${p.eliminacion ? `
-                                    <div class="flex items-center justify-between bg-slate-800 p-2 rounded border border-red-900/30">
-                                        <div class="flex items-center gap-1"><input type="checkbox" id="hP-${p.id}"> <label class="text-[8px] uppercase">¿Hubo Penales?</label></div>
-                                        <select id="resP-${p.id}" class="bg-slate-900 text-[9px] p-1 border border-slate-700 rounded text-white"><option value="L">Pasa ${p.local}</option><option value="V">Pasa ${p.visitante}</option></select>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>`).join('')}
-                    </div>`;
-            }
-        };
+    </div>
 
-        window.verMuro = async (id, tit) => {
-            const q = await getDocs(query(collection(db, "predicciones"), where("partidoId", "==", id)));
-            const lista = document.getElementById('modal-list');
-            document.getElementById('modal-title').innerText = tit;
-            lista.innerHTML = "";
-            q.forEach(d => { 
-                const p = d.data(); 
-                lista.innerHTML += `<div class="flex justify-between bg-slate-900 p-3 rounded text-sm border border-slate-700"><span>${p.user}</span><span class="font-bold text-yellow-500">${p.gl} - ${p.gv} ${p.usaPenales ? `<span class="text-[9px] text-red-500 ml-1">(P: ${p.penales})</span>` : ''}</span></div>`; 
-            });
-            document.getElementById('modal-preds').classList.remove('hidden');
-        };
 
-        window.setProximo = async (id) => {
-            const q = await getDocs(collection(db, "partidos"));
-            const batch = q.docs.map(d => updateDoc(doc(db, "partidos", d.id), { esProximo: false }));
-            await Promise.all(batch);
-            await updateDoc(doc(db, "partidos", id), { esProximo: true });
-            showTab('admin');
-        };
 
-        window.deletePartido = async (id) => {
-            if(confirm("¿Borrar partido?")) { await deleteDoc(doc(db, "partidos", id)); showTab('admin'); }
-        };
+    <div id="modal-preds" class="modal hidden">
 
-        window.closeModal = () => document.getElementById('modal-preds').classList.add('hidden');
-        window.toggleMuro = async (id, val) => { await updateDoc(doc(db, "partidos", id), { verOtros: val }); showTab('admin'); };
-        
-        window.savePred = async (id) => {
-            const gl = document.getElementById(`l-${id}`).value; const gv = document.getElementById(`v-${id}`).value;
-            const divP = document.getElementById(`div-p-${id}`);
-            const usaP = divP ? !divP.classList.contains('hidden') : false;
-            const pen = usaP ? document.getElementById(`p-${id}`).value : "";
-            if (gl === "" || gv === "") return alert("Poné goles.");
-            // Validaciones quitadas para que el penal sea opcional
-            await setDoc(doc(db, "predicciones", `${currentUser}_${id}`), { user: currentUser, partidoId: id, gl: parseInt(gl), gv: parseInt(gv), usaPenales: usaP, penales: pen });
-            alert("¡Guardado!"); location.reload();
-        };
+        <div class="bg-slate-800 w-full max-w-sm rounded-xl p-6 border border-slate-600 shadow-2xl">
 
-        window.addPartido = async () => {
-            const l = document.getElementById('newL').value; const v = document.getElementById('newV').value;
-            const f = document.getElementById('newF').value; const t = document.getElementById('newTorneo').value;
-            const i = document.getElementById('newInst').value; const elim = document.getElementById('isElim').checked;
-            if(!l || !v) return alert("Equipos obligatorios.");
-            await addDoc(collection(db, "partidos"), { local: l, visitante: v, fecha: f, torneo: t, instancia: i, finalizado: false, verOtros: false, esProximo: false, eliminacion: elim, golesL: 0, golesV: 0, huboPenales: false, ganadorPenales: "" });
-            showTab('admin');
-        };
+            <h3 id="modal-title" class="text-yellow-500 font-bold mb-4 uppercase text-xs">Pronósticos</h3>
 
-        window.finalizarPartido = async (id, esElim) => {
-            const gl = document.getElementById(`resL-${id}`).value; const gv = document.getElementById(`resV-${id}`).value;
-            if(gl === "" || gv === "") return alert("Poné el resultado final.");
-            const hp = esElim ? document.getElementById(`hP-${id}`).checked : false;
-            const gp = esElim && hp ? document.getElementById(`resP-${id}`).value : "";
-            await updateDoc(doc(db, "partidos", id), { golesL: parseInt(gl), golesV: parseInt(gv), finalizado: true, verOtros: true, esProximo: false, huboPenales: hp, ganadorPenales: gp });
-            showTab('admin');
-        };
+            <div id="modal-list" class="space-y-2 mb-6"></div>
 
-        if (!currentUser) {
-            document.getElementById('tab-content').innerHTML = `<div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl"><div class="grid grid-cols-1 gap-3">${USERS.map(u => `<button onclick="login('${u}')" class="bg-slate-700 p-4 rounded-lg font-bold uppercase text-xs">${u}</button>`).join('')}</div></div>`;
-        } else {
-            document.getElementById('userInfo').innerHTML = `USUARIO: <b class="text-white">${currentUser.toUpperCase()}</b>`;
-            if(currentUser === "Esculapio") document.getElementById('adminBtn').classList.remove('hidden');
-            showTab('partidos');
-        }
-    </script>
+            <button onclick="closeModal()" class="w-full bg-slate-600 p-2 rounded font-bold text-xs uppercase">Cerrar</button>
+
+        </div>
+
+    </div>
+
+
+
+    <script type="module">
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+
+
+        const p1 = "AIzaSyC4w9O"; const p2 = "eswyNimznnNL6s"; const p3 = "AUXAtrb80Kft9E";
+
+        const firebaseConfig = { apiKey: p1+p2+p3, authDomain: "predicciones-2026.firebaseapp.com", projectId: "predicciones-2026", storageBucket: "predicciones-2026.firebasestorage.app", messagingSenderId: "226705370126", appId: "1:226705370126:web:04dfa828c687c9ee5ee05f" };
+
+        const app = initializeApp(firebaseConfig);
+
+        const db = getFirestore(app);
+
+
+
+        const PUNTOS_BASE = { "Kako": { pts: 57, ex: 10 }, "Esculapio": { pts: 54, ex: 6 }, "Popa": { pts: 50, ex: 8 }, "Fer": { pts: 49, ex: 8 }, "Bauti": { pts: 22, ex: 5 } };
+
+        const USERS = Object.keys(PUNTOS_BASE);
+
+        let currentUser = localStorage.getItem('prode_user');
+
+
+
+        window.login = (name) => { localStorage.setItem('prode_user', name); location.reload(); };
+
+
+
+        window.togglePenalesInput = (id) => {
+
+            const div = document.getElementById(`div-p-${id}`);
+
+            const btn = document.getElementById(`btn-p-${id}`);
+
+            if (div.classList.contains('hidden')) {
+
+                div.classList.remove('hidden');
+
+                btn.className = "w-full mt-2 p-1 rounded text-[10px] btn-penales-on uppercase";
+
+            } else {
+
+                div.classList.add('hidden');
+
+                btn.className = "w-full mt-2 p-1 rounded text-[10px] btn-penales-off uppercase";
+
+                document.getElementById(`p-${id}`).value = "";
+
+            }
+
+        };
+
+
+
+        window.showTab = async (tab) => {
+
+            const container = document.getElementById('tab-content');
+
+            container.innerHTML = `<div class="text-center py-10 text-slate-500 italic text-[10px] uppercase">Cargando...</div>`;
+
+
+
+            if (tab === 'partidos') {
+
+                const qP = await getDocs(collection(db, "partidos"));
+
+                const todos = qP.docs.map(d => ({id: d.id, ...d.data()}));
+
+                const proximos = todos.filter(p => !p.finalizado);
+
+                const destacado = todos.find(p => p.esProximo && !p.finalizado);
+
+                const qPre = await getDocs(query(collection(db, "predicciones"), where("user", "==", currentUser)));
+
+                const misPreds = {};
+
+                qPre.forEach(d => { misPreds[d.data().partidoId] = d.data(); });
+
+
+
+                let html = "";
+
+                if (destacado) {
+
+                    html += `<div class="card border-yellow-500/50 bg-yellow-500/5 mb-6"><div class="flex justify-between items-center mb-2"><span class="proximo-badget">Próximo Partido</span><span class="text-[10px] text-slate-400 font-bold uppercase">${destacado.fecha || ''}</span></div><div class="text-center text-[10px] text-yellow-600 font-bold uppercase mb-1">${destacado.torneo || ''} - ${destacado.instancia || ''}</div><div class="text-center text-xl font-black text-yellow-500 italic uppercase">${destacado.local} vs ${destacado.visitante}</div></div><div class="titulo-seccion">Pronosticar</div>`;
+
+                }
+
+
+
+                html += proximos.map(p => {
+
+                    const yaVoto = misPreds[p.id];
+
+                    const muroActivo = p.verOtros;
+
+                    const usaP = yaVoto?.usaPenales;
+
+                    return `<div class="card ${yaVoto ? 'border-green-600/30' : ''}"><div class="flex justify-between items-start mb-2"><div class="flex flex-col"><span class="text-[9px] text-blue-400 font-bold uppercase">${p.torneo || 'TORNEO'}</span><span class="text-[8px] text-slate-500 font-bold uppercase">${p.instancia || 'FECHA'}</span></div>${muroActivo ? `<button onclick="verMuro('${p.id}', '${p.local} vs ${p.visitante}')" class="text-[8px] bg-yellow-500 px-2 py-1 rounded text-black font-black animate-pulse">VER OTROS 👁️</button>` : `<span class="text-[8px] text-green-500 italic font-bold">ABIERTO</span>`}</div><div class="flex justify-between items-center text-lg font-bold"><span>${p.local}</span><div class="flex gap-2"><input id="l-${p.id}" type="number" value="${yaVoto ? yaVoto.gl : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"> <input id="v-${p.id}" type="number" value="${yaVoto ? yaVoto.gv : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"></div><span>${p.visitante}</span></div>
+
+                    ${p.eliminacion && !muroActivo ? `
+
+                        <button id="btn-p-${p.id}" onclick="togglePenalesInput('${p.id}')" class="w-full mt-2 p-1 rounded text-[10px] ${usaP ? 'btn-penales-on' : 'btn-penales-off'} uppercase">¿PENALES?</button>
+
+                        <div id="div-p-${p.id}" class="${usaP ? '' : 'hidden'} mt-2 p-2 bg-slate-800/50 rounded-lg text-center">
+
+                            <select id="p-${p.id}" class="bg-slate-900 text-[10px] p-1 rounded border border-slate-600 text-white">
+
+                                <option value="">- Quién avanza -</option>
+
+                                <option value="L" ${yaVoto?.penales === 'L' ? 'selected' : ''}>${p.local}</option>
+
+                                <option value="V" ${yaVoto?.penales === 'V' ? 'selected' : ''}>${p.visitante}</option>
+
+                            </select>
+
+                        </div>
+
+                    ` : ''}
+
+                    ${!muroActivo ? `<button onclick="savePred('${p.id}')" class="w-full mt-4 ${yaVoto ? 'bg-green-700' : 'bg-yellow-600'} p-2 rounded text-xs font-bold uppercase transition">${yaVoto ? 'Actualizar ✓' : 'Guardar'}</button>` : `<div class="w-full mt-4 bg-slate-800 p-2 rounded text-[10px] text-center text-slate-500 font-bold uppercase border border-slate-700 italic">Votación cerrada</div>`}</div>`;
+
+                }).join('') || "<p class='text-center py-10 text-slate-500 text-[10px] uppercase font-bold'>No hay partidos</p>";
+
+                container.innerHTML = html;
+
+            }
+
+
+
+            if (tab === 'ranking') {
+
+                const pSnap = await getDocs(collection(db, "partidos"));
+
+                const predSnap = await getDocs(collection(db, "predicciones"));
+
+                const partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
+
+                const preds = predSnap.docs.map(d => d.data());
+
+                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
+
+                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
+
+                
+
+                partidosFin.forEach(p => { 
+
+                    preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
+
+                        const i = USERS.indexOf(pr.user); 
+
+                        if (i !== -1) { 
+
+                            const ex = pr.gl == p.golesL && pr.gv == p.golesV; 
+
+                            const gan = (pr.gl > pr.gv && p.golesL > p.golesV) || (pr.gl < pr.gv && p.golesL < p.golesV) || (pr.gl == pr.gv && p.golesL == p.golesV); 
+
+                            let ptsSumar = 0;
+
+                            if(ex) { ptsSumar = 3; tAp[i].ex += 1; tAn[i].ex += 1; } 
+
+                            else if(gan) { ptsSumar = 1; }
+
+                            
+
+                            if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
+
+                                ptsSumar += 1;
+
+                            }
+
+                            
+
+                            tAp[i].pts += ptsSumar; tAn[i].pts += ptsSumar;
+
+                        } 
+
+                    }); 
+
+                });
+
+                const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
+
+                tAp.sort(sortF); tAn.sort(sortF);
+
+                const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
+
+                container.innerHTML = `<div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div><div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div><div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div><div class="card bg-red-900/10 text-[10px] space-y-1"><p>• Exacto: +3 pts | Tendencia: +1 pto.</p><p>• Acierto Ganador Penales: +1 pto.</p></div>`;
+
+            }
+
+
+
+            if (tab === 'titulos') {
+
+                container.innerHTML = `<div class="titulo-seccion">Títulos</div><div class="card bg-slate-800/40 text-sm space-y-2 mb-6 shadow-inner"><div class="flex justify-between border-b border-slate-700/50 pb-2"><span>Esculapio</span><b class="text-yellow-500">3 🏆</b></div>${USERS.filter(u => u !== "Esculapio").map(u => `<div class="flex justify-between text-slate-400"><span>${u}</span><b>0</b></div>`).join('')}</div><div class="titulo-seccion">Historia</div><div class="card bg-slate-800/40 text-[11px] space-y-2 mb-6 shadow-inner"><div class="flex justify-between border-b border-slate-700/30 pb-1"><span>Apertura 2025</span><b class="text-yellow-500">Esculapio 👑</b></div><div class="flex justify-between border-b border-slate-700/30 pb-1"><span>Clausura 2025</span><b class="text-yellow-500">Esculapio 👑</b></div><div class="flex justify-between"><span>Anual 2025</span><b class="text-yellow-500">Esculapio 👑</b></div></div><div class="titulo-seccion text-red-500 border-red-500 uppercase tracking-tighter">El Cementerio</div><div class="card bg-red-900/10 flex justify-between text-sm items-center"><span>Descenso 2025</span><b class="text-red-500 uppercase font-black">Bauti 🅱️</b></div>`;
+
+            }
+
+
+
+            if (tab === 'aura') {
+
+                container.innerHTML = `<div class="titulo-seccion italic text-indigo-400 border-indigo-400">EL AURA ✨</div><div class="card p-0 overflow-hidden border-indigo-500/40"><img src="https://media.tycsports.com/files/2026/04/19/942275/paredes-topo-gigio_1440x810_wmk.webp" class="w-full block"><div class="p-4 bg-slate-900"><p class="text-center text-xs font-bold italic text-indigo-300 uppercase tracking-widest leading-relaxed">"Donde hay AURA, el resto solo mira"</p></div></div>`;
+
+            }
+
+
+
+            if (tab === 'admin') {
+
+                const q = await getDocs(collection(db, "partidos"));
+
+                const pendientes = q.docs.map(d => ({id: d.id, ...d.data()})).filter(p => !p.finalizado);
+
+                container.innerHTML = `
+
+                    <div class="card border-red-900/50 mb-6">
+
+                        <h3 class="text-red-500 font-bold text-[10px] uppercase mb-4 tracking-widest">Nueva Fecha</h3>
+
+                        <div class="grid grid-cols-2 gap-2 mb-2"><input id="newL" placeholder="Local" class="p-2 bg-slate-900 rounded text-sm text-white"><input id="newV" placeholder="Visitante" class="p-2 bg-slate-900 rounded text-sm text-white"></div>
+
+                        <div class="grid grid-cols-2 gap-2 mb-2"><input id="newTorneo" placeholder="Torneo" class="p-2 bg-slate-900 rounded text-[10px] text-white"><input id="newInst" placeholder="Instancia" class="p-2 bg-slate-900 rounded text-[10px] text-white"></div>
+
+                        <input id="newF" placeholder="Fecha/Hora" class="w-full p-2 mb-2 bg-slate-900 rounded text-[10px] text-slate-500">
+
+                        <div class="flex items-center gap-2 mb-4"><input type="checkbox" id="isElim"> <label class="text-[10px] uppercase font-bold text-red-400">Eliminación Directa</label></div>
+
+                        <button onclick="addPartido()" class="w-full bg-red-600 p-2 rounded font-bold text-xs uppercase">Publicar</button>
+
+                    </div>
+
+                    <div class="space-y-4">
+
+                        ${pendientes.map(p => `
+
+                        <div class="card border-slate-700 bg-slate-900/50">
+
+                            <div class="flex justify-between items-center mb-3">
+
+                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante}</div>
+
+                                <button onclick="deletePartido('${p.id}')" class="text-[9px] bg-red-900/50 text-red-500 px-2 py-1 rounded">ELIMINAR 🗑️</button>
+
+                            </div>
+
+                            <div class="flex gap-1 mb-3">
+
+                                <button onclick="toggleMuro('${p.id}', ${!p.verOtros})" class="flex-1 ${p.verOtros ? 'bg-slate-600' : 'bg-blue-600'} p-2 rounded text-[9px] font-bold uppercase">${p.verOtros ? 'Abrir Votos' : 'Cerrar Votos'}</button>
+
+                                <button onclick="setProximo('${p.id}')" class="flex-1 ${p.esProximo ? 'bg-yellow-600 text-black' : 'bg-slate-700 text-yellow-500'} p-2 rounded text-[9px] font-bold uppercase">${p.esProximo ? '★ Destacado' : 'Destacar'}</button>
+
+                            </div>
+
+                            <div class="flex flex-col gap-2">
+
+                                <div class="flex gap-2">
+
+                                    <input id="resL-${p.id}" type="number" placeholder="L" class="w-1/4 p-2 bg-slate-900 rounded text-center border border-slate-700 text-sm font-bold text-white"><input id="resV-${p.id}" type="number" placeholder="V" class="w-1/4 p-2 bg-slate-900 rounded text-center border border-slate-700 text-sm font-bold text-white"><button onclick="finalizarPartido('${p.id}', ${p.eliminacion})" class="flex-1 bg-green-700 rounded text-[10px] font-bold uppercase">Cerrar</button>
+
+                                </div>
+
+                                ${p.eliminacion ? `
+
+                                    <div class="flex items-center justify-between bg-slate-800 p-2 rounded border border-red-900/30">
+
+                                        <div class="flex items-center gap-1"><input type="checkbox" id="hP-${p.id}"> <label class="text-[8px] uppercase">¿Hubo Penales?</label></div>
+
+                                        <select id="resP-${p.id}" class="bg-slate-900 text-[9px] p-1 border border-slate-700 rounded text-white"><option value="L">Pasa ${p.local}</option><option value="V">Pasa ${p.visitante}</option></select>
+
+                                    </div>
+
+                                ` : ''}
+
+                            </div>
+
+                        </div>`).join('')}
+
+                    </div>`;
+
+            }
+
+        };
+
+
+
+        window.verMuro = async (id, tit) => {
+
+            const q = await getDocs(query(collection(db, "predicciones"), where("partidoId", "==", id)));
+
+            const lista = document.getElementById('modal-list');
+
+            document.getElementById('modal-title').innerText = tit;
+
+            lista.innerHTML = "";
+
+            q.forEach(d => { 
+
+                const p = d.data(); 
+
+                lista.innerHTML += `<div class="flex justify-between bg-slate-900 p-3 rounded text-sm border border-slate-700"><span>${p.user}</span><span class="font-bold text-yellow-500">${p.gl} - ${p.gv} ${p.usaPenales ? `<span class="text-[9px] text-red-500 ml-1">(P: ${p.penales})</span>` : ''}</span></div>`; 
+
+            });
+
+            document.getElementById('modal-preds').classList.remove('hidden');
+
+        };
+
+
+
+        window.setProximo = async (id) => {
+
+            const q = await getDocs(collection(db, "partidos"));
+
+            const batch = q.docs.map(d => updateDoc(doc(db, "partidos", d.id), { esProximo: false }));
+
+            await Promise.all(batch);
+
+            await updateDoc(doc(db, "partidos", id), { esProximo: true });
+
+            showTab('admin');
+
+        };
+
+
+
+        window.deletePartido = async (id) => {
+
+            if(confirm("¿Borrar partido?")) { await deleteDoc(doc(db, "partidos", id)); showTab('admin'); }
+
+        };
+
+
+
+        window.closeModal = () => document.getElementById('modal-preds').classList.add('hidden');
+
+        window.toggleMuro = async (id, val) => { await updateDoc(doc(db, "partidos", id), { verOtros: val }); showTab('admin'); };
+
+        
+
+        window.savePred = async (id) => {
+
+            const gl = document.getElementById(`l-${id}`).value; const gv = document.getElementById(`v-${id}`).value;
+
+            const divP = document.getElementById(`div-p-${id}`);
+
+            const usaP = divP ? !divP.classList.contains('hidden') : false;
+
+            const pen = usaP ? document.getElementById(`p-${id}`).value : "";
+
+            if (gl === "" || gv === "") return alert("Poné goles.");
+
+            // Validaciones quitadas para que el penal sea opcional
+
+            await setDoc(doc(db, "predicciones", `${currentUser}_${id}`), { user: currentUser, partidoId: id, gl: parseInt(gl), gv: parseInt(gv), usaPenales: usaP, penales: pen });
+
+            alert("¡Guardado!"); location.reload();
+
+        };
+
+
+
+        window.addPartido = async () => {
+
+            const l = document.getElementById('newL').value; const v = document.getElementById('newV').value;
+
+            const f = document.getElementById('newF').value; const t = document.getElementById('newTorneo').value;
+
+            const i = document.getElementById('newInst').value; const elim = document.getElementById('isElim').checked;
+
+            if(!l || !v) return alert("Equipos obligatorios.");
+
+            await addDoc(collection(db, "partidos"), { local: l, visitante: v, fecha: f, torneo: t, instancia: i, finalizado: false, verOtros: false, esProximo: false, eliminacion: elim, golesL: 0, golesV: 0, huboPenales: false, ganadorPenales: "" });
+
+            showTab('admin');
+
+        };
+
+
+
+        window.finalizarPartido = async (id, esElim) => {
+
+            const gl = document.getElementById(`resL-${id}`).value; const gv = document.getElementById(`resV-${id}`).value;
+
+            if(gl === "" || gv === "") return alert("Poné el resultado final.");
+
+            const hp = esElim ? document.getElementById(`hP-${id}`).checked : false;
+
+            const gp = esElim && hp ? document.getElementById(`resP-${id}`).value : "";
+
+            await updateDoc(doc(db, "partidos", id), { golesL: parseInt(gl), golesV: parseInt(gv), finalizado: true, verOtros: true, esProximo: false, huboPenales: hp, ganadorPenales: gp });
+
+            showTab('admin');
+
+        };
+
+
+
+        if (!currentUser) {
+
+            document.getElementById('tab-content').innerHTML = `<div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl"><div class="grid grid-cols-1 gap-3">${USERS.map(u => `<button onclick="login('${u}')" class="bg-slate-700 p-4 rounded-lg font-bold uppercase text-xs">${u}</button>`).join('')}</div></div>`;
+
+        } else {
+
+            document.getElementById('userInfo').innerHTML = `USUARIO: <b class="text-white">${currentUser.toUpperCase()}</b>`;
+
+            if(currentUser === "Esculapio") document.getElementById('adminBtn').classList.remove('hidden');
+
+            showTab('partidos');
+
+        }
+
+    </script>
+
 </body>
-</html>                           
+
+</html>
