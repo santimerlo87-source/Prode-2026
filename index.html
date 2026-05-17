@@ -17,6 +17,7 @@
         .proximo-badget { background: #eab308; color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
         .btn-penales-off { background: #334155; color: #94a3b8; }
         .btn-penales-on { background: #eab308; color: #000; font-weight: bold; }
+        /* Nuevos estilos específicos para la sección Mundial */
         .grupo-btn { background: linear-gradient(135deg, #1d4ed8 0%, #b91c1c 50%, #15803d 100%); transition: transform 0.2s; }
         .grupo-btn:hover { transform: scale(1.03); }
     </style>
@@ -86,6 +87,7 @@
             const container = document.getElementById('tab-content');
             container.innerHTML = `<div class="text-center py-10 text-slate-500 italic text-[10px] uppercase">Cargando...</div>`;
 
+            // Configuración global de llaves del mundial
             let mConfig = { llavesCerradas: false, real16:[], real8:[], real4:[], real2:[], realFinal:[], realCampeon:"" };
             const mDoc = await getDoc(doc(db, "config_mundial", "global"));
             if(mDoc.exists()) mConfig = mDoc.data();
@@ -93,6 +95,7 @@
             if (tab === 'partidos') {
                 const qP = await getDocs(collection(db, "partidos"));
                 const todos = qP.docs.map(d => ({id: d.id, ...d.data()}));
+                // Filtra para que en esta pestaña no salgan los partidos asignados a grupos del mundial
                 const proximos = todos.filter(p => !p.finalizado && p.temporada !== "Mundial");
                 const destacado = todos.find(p => p.esProximo && !p.finalizado);
                 const qPre = await getDocs(query(collection(db, "predicciones"), where("user", "==", currentUser)));
@@ -128,61 +131,20 @@
                 let uLlaveDoc = await getDoc(doc(db, "mundial_llaves", currentUser));
                 let uLlave = uLlaveDoc.exists() ? uLlaveDoc.data() : null;
 
-                // Buscamos partidos de fase eliminatoria mano a mano del mundial (zonaMundial === 0)
-                const qFf = await getDocs(query(collection(db, "partidos"), where("temporada", "==", "Mundial"), where("zonaMundial", "==", 0)));
-                const eliminatoriasMundial = qFf.docs.map(d => ({id: d.id, ...d.data()}));
-                const qPre = await getDocs(query(collection(db, "predicciones"), where("user", "==", currentUser)));
-                const misPreds = {};
-                qPre.forEach(d => { misPreds[d.data().partidoId] = d.data(); });
-
                 let html = `
-                <div class="titulo-seccion text-emerald-400 border-emerald-500 font-black">Fase de Grupos 🌍</div>
-                <div class="card bg-slate-900/80 border-slate-700 p-4 mb-6">
+                <div class="titulo-seccion text-emerald-400 border-emerald-500 font-black">Fase de Grupos (72 Partidos) 🌍</div>
+                <div class="card bg-slate-900/80 border-slate-700 p-4">
                     <p class="text-[10px] text-slate-400 uppercase tracking-wide font-bold mb-3 text-center">Seleccioná un grupo para cargar tus pronósticos de zona:</p>
                     <div class="grid grid-cols-3 gap-2">
                         ${Array.from({length: 12}, (_, i) => `
                             <button onclick="abrirFixtureGrupo(${i+1})" class="grupo-btn text-white font-black text-center py-3 px-1 rounded-lg text-xs uppercase tracking-tighter shadow-md">
-                                Grupo ${String.fromCharCode(64 + i + 1)}
+                                Grupo ${String.fromCharCode(65 + i)}
                             </button>
                         `).join('')}
                     </div>
-                </div>`;
+                </div>
 
-                if(eliminatoriasMundial.length > 0) {
-                    html += `<div class="titulo-seccion text-blue-400 border-blue-500 font-black">Partidos de Llave Mano a Mano ⚔️</div>`;
-                    html += eliminatoriasMundial.map(p => {
-                        const yaVoto = misPreds[p.id];
-                        const muroActivo = p.verOtros;
-                        const usaP = yaVoto?.usaPenales;
-                        return `<div class="card ${p.finalizado ? 'border-slate-800' : yaVoto ? 'border-green-600/30' : ''}">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="flex flex-col"><span class="text-[9px] text-yellow-500 font-bold uppercase">${p.torneo || 'MUNDIAL'}</span><span class="text-[8px] text-slate-500 font-bold uppercase">${p.instancia || 'FASE FINAL'}</span></div>
-                                ${p.finalizado ? `<span class="text-[8px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-bold">FINAL: ${p.golesL} - ${p.golesV} ${p.huboPenales ? `(P: ${p.ganadorPenales})`:''}</span>` : muroActivo ? `<button onclick="verMuro('${p.id}', '${p.local} vs ${p.visitante}')" class="text-[8px] bg-yellow-500 px-2 py-1 rounded text-black font-black animate-pulse">VER OTROS 👁️</button>` : `<span class="text-[8px] text-green-500 italic font-bold">ABIERTO</span>`}
-                            </div>
-                            <div class="flex justify-between items-center text-lg font-bold">
-                                <span>${p.local}</span>
-                                <div class="flex gap-2">
-                                    <input id="l-${p.id}" type="number" value="${yaVoto ? yaVoto.gl : ''}" ${muroActivo || p.finalizado ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border border-slate-600 font-bold text-white">
-                                    <input id="v-${p.id}" type="number" value="${yaVoto ? yaVoto.gv : ''}" ${muroActivo || p.finalizado ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border border-slate-600 font-bold text-white">
-                                </div>
-                                <span>${p.visitante}</span>
-                            </div>
-                            ${!p.finalizado && !muroActivo ? `
-                                <button id="btn-p-${p.id}" onclick="togglePenalesInput('${p.id}')" class="w-full mt-2 p-1 rounded text-[10px] ${usaP ? 'btn-penales-on' : 'btn-penales-off'} uppercase">¿PENALES?</button>
-                                <div id="div-p-${p.id}" class="${usaP ? '' : 'hidden'} mt-2 p-2 bg-slate-800/50 rounded-lg text-center">
-                                    <select id="p-${p.id}" class="bg-slate-900 text-[10px] p-1 rounded border border-slate-600 text-white">
-                                        <option value="">- Quién avanza -</option>
-                                        <option value="L" ${yaVoto?.penales === 'L' ? 'selected' : ''}>${p.local}</option>
-                                        <option value="V" ${yaVoto?.penales === 'V' ? 'selected' : ''}>${p.visitante}</option>
-                                    </select>
-                                </div>
-                                <button onclick="savePred('${p.id}')" class="w-full mt-4 ${yaVoto ? 'bg-green-700' : 'bg-yellow-600'} p-2 rounded text-xs font-bold uppercase transition">${yaVoto ? 'Actualizar ✓' : 'Guardar'}</button>
-                            ` : !p.finalizado ? `<div class="w-full mt-4 bg-slate-800 p-2 rounded text-[10px] text-center text-slate-500 font-bold uppercase border border-slate-700 italic">Votación cerrada</div>` : ''}
-                        </div>`;
-                    }).join('');
-                }
-
-                html += `<div class="titulo-seccion text-red-500 border-red-500 font-black">Tu Predicción del Cuadro Final</div>`;
+                <div class="titulo-seccion text-red-500 border-red-500 font-black">Tu Predicción del Cuadro Final</div>`;
 
                 if(!mConfig.llavesCerradas) {
                     html += `<div class="card bg-slate-900 border-slate-700">
@@ -321,7 +283,7 @@
                         <div id="div-admin-zona" class="hidden mb-3">
                             <label class="block text-[8px] uppercase font-bold text-emerald-400 mb-1">Asignar a Grupo (1 al 12):</label>
                             <select id="newZona" class="w-full p-2 bg-slate-900 rounded text-[10px] text-white border border-emerald-600/30">
-                                <option value="0">Fase Final Directa (16avos, 8vos, etc)</option>
+                                <option value="0">Fase Final Directa</option>
                                 ${Array.from({length: 12}, (_, i) => `<option value="${i+1}">Grupo ${String.fromCharCode(65 + i)}</option>`).join('')}
                             </select>
                         </div>
@@ -332,7 +294,7 @@
                         ${pendientes.map(p => `
                         <div class="card border-slate-700 bg-slate-900/50">
                             <div class="flex justify-between items-center mb-3">
-                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante} ${p.temporada === 'Mundial' ? `(Mundial - Grupo: ${p.zonaMundial === 0 ? 'Fase Final' : p.zonaMundial})` : ''}</div>
+                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante} ${p.temporada === 'Mundial' ? `(Mundial - Grupo: ${p.zonaMundial || 'Eliminatoria'})` : ''}</div>
                                 <button onclick="deletePartido('${p.id}')" class="text-[9px] bg-red-900/50 text-red-500 px-2 py-1 rounded">ELIMINAR 🗑️</button>
                             </div>
                             <div class="flex gap-1 mb-3">
@@ -361,7 +323,7 @@
                             <input id="adm-4" placeholder="Los 8 reales de 4tos" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.real4 ? mConfig.real4.join(',') : ''}">
                             <input id="adm-2" placeholder="Los 4 reales de Semis" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.real2 ? mConfig.real2.join(',') : ''}">
                             <input id="adm-fin" placeholder="Los 2 finalistas reales" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.realFinal ? mConfig.realFinal.join(',') : ''}">
-                            <input id="adm-cam" placeholder="Campeón Oficial 🏆" class="w-full p-2 bg-slate-900 border border-yellow-500 font-bold text-yellow-500 text-xs" value="${mConfig.realCampeon || ''}">
+                            <input id="adm-cam" placeholder="Campeón Oficial 🏆" class="w-full p-2 bg-slate-900 border border-yellow-500 font-bold text-yellow-500 text-xs" value="${mConfig.realCamp || ''}">
                             <button onclick="saveGlobalMundial()" class="w-full bg-yellow-600 text-black font-black p-2 rounded uppercase mt-2">Guardar Resultados Cuadro</button>
                         </div>
                     </div>`;
@@ -483,4 +445,43 @@
             const q = await getDocs(collection(db, "mundial_llaves"));
             const lista = document.getElementById('modal-list');
             document.getElementById('modal-title').innerText = "CUADROS MUNDIALISTAS 🌍";
-            lista.
+            lista.innerHTML = "";
+            q.forEach(d => {
+                const data = d.data();
+                lista.innerHTML += `<div class="bg-slate-900 p-3 rounded text-xs border border-slate-700 mb-2">
+                    <div class="text-yellow-500 font-bold text-sm border-b border-slate-800 pb-1">${d.id.toUpperCase()}</div>
+                    <p><b class="text-emerald-400">Campeón:</b> ${data.campeon || '---'}</p>
+                    <p class="text-[10px] text-slate-400 truncate"><b>Final:</b> ${data.instFinal ? data.instFinal.join(', ') : ''}</p>
+                </div>`;
+            });
+            document.getElementById('modal-preds').classList.remove('hidden');
+        };
+
+        window.cerrarVedaMundial = async () => {
+            if(confirm("¿Cerrar veda total del cuadro?")) {
+                await setDoc(doc(db, "config_mundial", "global"), { llavesCerradas: true }, { merge: true });
+                showTab('admin');
+            }
+        };
+
+        window.saveGlobalMundial = async () => {
+            const cleanArray = (id) => document.getElementById(id).value.split(',').map(x => x.trim()).filter(x => x !== "");
+            await setDoc(doc(db, "config_mundial", "global"), {
+                real16: cleanArray('adm-16'), real8: cleanArray('adm-8'),
+                real4: cleanArray('adm-4'), real2: cleanArray('adm-2'),
+                realFinal: cleanArray('adm-fin'), realCampeon: document.getElementById('adm-cam').value.trim()
+            }, { merge: true });
+            alert("Resultados guardados y rankings computados.");
+            showTab('admin');
+        };
+
+        if (!currentUser) {
+            document.getElementById('tab-content').innerHTML = `<div class="bg-slate-800 p-6 rounded-xl border border-slate-700 shadow-xl"><div class="grid grid-cols-1 gap-3">${USERS.map(u => `<button onclick="login('${u}')" class="bg-slate-700 p-4 rounded-lg font-bold uppercase text-xs">${u}</button>`).join('')}</div></div>`;
+        } else {
+            document.getElementById('userInfo').innerHTML = `USUARIO: <b class="text-white">${currentUser.toUpperCase()}</b>`;
+            if(currentUser === "Esculapio") document.getElementById('adminBtn').classList.remove('hidden');
+            showTab('partidos');
+        }
+    </script>
+</body>
+</html>
