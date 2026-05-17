@@ -17,6 +17,9 @@
         .proximo-badget { background: #eab308; color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
         .btn-penales-off { background: #334155; color: #94a3b8; }
         .btn-penales-on { background: #eab308; color: #000; font-weight: bold; }
+        /* Nuevos estilos específicos para la sección Mundial */
+        .grupo-btn { background: linear-gradient(135deg, #1d4ed8 0%, #b91c1c 50%, #15803d 100%); transition: transform 0.2s; }
+        .grupo-btn:hover { transform: scale(1.03); }
     </style>
 </head>
 <body>
@@ -27,6 +30,7 @@
         </div>
         <div class="flex gap-1 mb-6 overflow-x-auto pb-2 no-scrollbar">
             <button onclick="showTab('partidos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Partidos</button>
+            <button onclick="showTab('mundial')" class="flex-none bg-emerald-600 px-3 py-2 rounded font-bold text-[9px] uppercase shadow-lg shadow-emerald-500/20">Mundial 🌍</button>
             <button onclick="showTab('ranking')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Ranking</button>
             <button onclick="showTab('titulos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Títulos</button>
             <button onclick="showTab('aura')" class="flex-none bg-indigo-700 px-3 py-2 rounded font-bold text-[9px] uppercase shadow-lg shadow-indigo-500/20">AURA ✨</button>
@@ -38,14 +42,22 @@
     <div id="modal-preds" class="modal hidden">
         <div class="bg-slate-800 w-full max-w-sm rounded-xl p-6 border border-slate-600 shadow-2xl">
             <h3 id="modal-title" class="text-yellow-500 font-bold mb-4 uppercase text-xs">Pronósticos</h3>
-            <div id="modal-list" class="space-y-2 mb-6"></div>
+            <div id="modal-list" class="space-y-2 mb-6 max-h-[250px] overflow-y-auto no-scrollbar"></div>
             <button onclick="closeModal()" class="w-full bg-slate-600 p-2 rounded font-bold text-xs uppercase">Cerrar</button>
+        </div>
+    </div>
+
+    <div id="modal-grupo-fixture" class="modal hidden">
+        <div class="bg-slate-950 w-full max-w-md rounded-xl p-4 border border-blue-600/40 shadow-2xl max-h-[90vh] flex flex-col">
+            <h3 id="modal-grupo-title" class="text-emerald-400 font-black mb-4 uppercase text-center tracking-widest text-sm border-b border-slate-800 pb-2">Grupo X</h3>
+            <div id="modal-grupo-list" class="space-y-3 overflow-y-auto no-scrollbar flex-1 pb-4"></div>
+            <button onclick="document.getElementById('modal-grupo-fixture').classList.add('hidden')" class="w-full bg-red-700 p-2.5 rounded font-bold text-xs uppercase tracking-wider mt-2">Volver</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const p1 = "AIzaSyC4w9O"; const p2 = "eswyNimznnNL6s"; const p3 = "AUXAtrb80Kft9E";
         const firebaseConfig = { apiKey: p1+p2+p3, authDomain: "predicciones-2026.firebaseapp.com", projectId: "predicciones-2026", storageBucket: "predicciones-2026.firebasestorage.app", messagingSenderId: "226705370126", appId: "1:226705370126:web:04dfa828c687c9ee5ee05f" };
@@ -75,10 +87,16 @@
             const container = document.getElementById('tab-content');
             container.innerHTML = `<div class="text-center py-10 text-slate-500 italic text-[10px] uppercase">Cargando...</div>`;
 
+            // Configuración global de llaves del mundial
+            let mConfig = { llavesCerradas: false, real16:[], real8:[], real4:[], real2:[], realFinal:[], realCampeon:"" };
+            const mDoc = await getDoc(doc(db, "config_mundial", "global"));
+            if(mDoc.exists()) mConfig = mDoc.data();
+
             if (tab === 'partidos') {
                 const qP = await getDocs(collection(db, "partidos"));
                 const todos = qP.docs.map(d => ({id: d.id, ...d.data()}));
-                const proximos = todos.filter(p => !p.finalizado);
+                // Filtra para que en esta pestaña no salgan los partidos asignados a grupos del mundial
+                const proximos = todos.filter(p => !p.finalizado && p.temporada !== "Mundial");
                 const destacado = todos.find(p => p.esProximo && !p.finalizado);
                 const qPre = await getDocs(query(collection(db, "predicciones"), where("user", "==", currentUser)));
                 const misPreds = {};
@@ -109,13 +127,77 @@
                 container.innerHTML = html;
             }
 
+            if (tab === 'mundial') {
+                let uLlaveDoc = await getDoc(doc(db, "mundial_llaves", currentUser));
+                let uLlave = uLlaveDoc.exists() ? uLlaveDoc.data() : null;
+
+                let html = `
+                <div class="titulo-seccion text-emerald-400 border-emerald-500 font-black">Fase de Grupos (72 Partidos) 🌍</div>
+                <div class="card bg-slate-900/80 border-slate-700 p-4">
+                    <p class="text-[10px] text-slate-400 uppercase tracking-wide font-bold mb-3 text-center">Seleccioná un grupo para cargar tus pronósticos de zona:</p>
+                    <div class="grid grid-cols-3 gap-2">
+                        ${Array.from({length: 12}, (_, i) => `
+                            <button onclick="abrirFixtureGrupo(${i+1})" class="grupo-btn text-white font-black text-center py-3 px-1 rounded-lg text-xs uppercase tracking-tighter shadow-md">
+                                Grupo ${String.fromCharCode(65 + i)}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="titulo-seccion text-red-500 border-red-500 font-black">Tu Predicción del Cuadro Final</div>`;
+
+                if(!mConfig.llavesCerradas) {
+                    html += `<div class="card bg-slate-900 border-slate-700">
+                        <p class="text-[9px] text-slate-400 uppercase mb-4 font-bold text-center">Armá tu proyección del cuadro eliminatorio completo:</p>
+                        <div class="space-y-3 text-xs">
+                            <div><label class="block text-[9px] uppercase font-bold text-blue-400 mb-1">A 16avos de Final (32 selecciones separadas por coma):</label>
+                            <input id="ll-16" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.inst16 ? uLlave.inst16.join(', ') : ''}" placeholder="Argentina, Brasil, Francia..."></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-red-400 mb-1">A 8vos de Final (16 selecciones):</label>
+                            <input id="ll-8" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.inst8 ? uLlave.inst8.join(', ') : ''}"></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-emerald-400 mb-1">A 4tos de Final (8 selecciones):</label>
+                            <input id="ll-4" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.inst4 ? uLlave.inst4.join(', ') : ''}"></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-blue-400 mb-1">A Semifinales (4 selecciones):</label>
+                            <input id="ll-2" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.inst2 ? uLlave.inst2.join(', ') : ''}"></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-red-400 mb-1">A la Final (2 selecciones):</label>
+                            <input id="ll-fin" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.instFinal ? uLlave.instFinal.join(', ') : ''}"></div>
+                            <div><label class="block text-[9px] uppercase font-bold text-yellow-500 mb-1">🏆 CAMPEÓN DEL MUNDO INICIAL (+10 pts):</label>
+                            <input id="ll-cam" type="text" class="w-full p-2 bg-slate-950 border border-yellow-500/50 rounded text-sm font-bold text-yellow-500" value="${uLlave?.campeon ? uLlave.campeon : ''}"></div>
+                            <button onclick="saveLlave()" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 p-2 rounded font-black uppercase text-xs">Guardar Cuadro Completo</button>
+                        </div>
+                    </div>`;
+                } else {
+                    html += `<div class="card bg-slate-900 border-red-600/30">
+                        <div class="flex justify-between items-center mb-4">
+                            <span class="text-[9px] bg-red-900/60 text-red-400 px-2 py-1 rounded font-black uppercase">Veda Cerrada 🔒</span>
+                            <button onclick="verMuroLlaves()" class="text-[8px] bg-yellow-500 text-black font-black px-2 py-1 rounded">VER LLAVES OTRAS 👁️</button>
+                        </div>
+                        <div class="text-xs space-y-2">
+                            <p class="truncate"><b class="text-blue-400">Tus 16avos:</b> ${uLlave?.inst16 ? uLlave.inst16.join(', ') : 'No ingresado'}</p>
+                            <p class="truncate"><b class="text-red-400">Tus 8vos:</b> ${uLlave?.inst8 ? uLlave.inst8.join(', ') : 'No ingresado'}</p>
+                            <p class="truncate"><b class="text-emerald-400">Tus 4tos:</b> ${uLlave?.inst4 ? uLlave.inst4.join(', ') : 'No ingresado'}</p>
+                            <p class="truncate"><b class="text-blue-400">Tus Semis:</b> ${uLlave?.inst2 ? uLlave.inst2.join(', ') : 'No ingresado'}</p>
+                            <p class="truncate"><b class="text-red-400">Tu Final:</b> ${uLlave?.instFinal ? uLlave.instFinal.join(', ') : 'No ingresado'}</p>
+                            <p class="text-yellow-500 font-bold"><b>Tu Campeón:</b> ${uLlave?.campeon ? uLlave.campeon : 'No ingresado'}</p>
+                        </div>
+                    </div>`;
+                }
+                container.innerHTML = html;
+            }
+
             if (tab === 'ranking') {
                 const pSnap = await getDocs(collection(db, "partidos"));
                 const predSnap = await getDocs(collection(db, "predicciones"));
+                const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
+                
                 const partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
                 const preds = predSnap.docs.map(d => d.data());
+                
+                let llavesData = {};
+                llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
+
                 let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
                 let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
+                let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
                 partidosFin.forEach(p => { 
                     preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
@@ -124,21 +206,52 @@
                             const ex = pr.gl == p.golesL && pr.gv == p.golesV; 
                             const gan = (pr.gl > pr.gv && p.golesL > p.golesV) || (pr.gl < pr.gv && p.golesL < p.golesV) || (pr.gl == pr.gv && p.golesL == p.golesV); 
                             let ptsSumar = 0;
-                            if(ex) { ptsSumar = 3; tAp[i].ex += 1; tAn[i].ex += 1; } 
+                            let esEx = 0;
+                            if(ex) { ptsSumar = 3; esEx = 1; } 
                             else if(gan) { ptsSumar = 1; }
                             
                             if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
                                 ptsSumar += 1;
                             }
                             
-                            tAp[i].pts += ptsSumar; tAn[i].pts += ptsSumar;
+                            if(p.temporada === "Mundial") {
+                                tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
+                            } else {
+                                tAp[i].pts += ptsSumar; tAn[i].pts += ptsSumar;
+                                if(ex) { tAp[i].ex += 1; tAn[i].ex += 1; }
+                            }
                         } 
                     }); 
                 });
+
+                USERS.forEach((u, idx) => {
+                    const ll = llavesData[u];
+                    if(ll) {
+                        if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
+                        if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
+                        if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
+                        if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
+                        if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
+                        if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) {
+                            tMun[idx].pts += 10;
+                        }
+                    }
+                });
+
                 const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
-                tAp.sort(sortF); tAn.sort(sortF);
+                tAp.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
                 const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
-                container.innerHTML = `<div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div><div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div><div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div><div class="card bg-red-900/10 text-[10px] space-y-1"><p>• Exacto: +3 pts | Tendencia: +1 pto.</p><p>• Acierto Ganador Penales: +1 pto.</p></div>`;
+                
+                container.innerHTML = `
+                    <div class="titulo-seccion text-emerald-400 border-emerald-400">Mundial 2026 🌍</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tMun)}</div>
+                    <div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div>
+                    <div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div>
+                    <div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div>
+                    <div class="card bg-red-900/10 text-[10px] space-y-1">
+                        <p>• Exacto: +3 pts | Tendencia: +1 pto.</p>
+                        <p>• Acierto Ganador Penales: +1 pto.</p>
+                        <p>• Cuadro Mundial: 16avos (+1), 8vos (+2), 4tos (+3), Semis (+4), Final (+5), Campeón (+10).</p>
+                    </div>`;
             }
 
             if (tab === 'titulos') {
@@ -156,16 +269,32 @@
                     <div class="card border-red-900/50 mb-6">
                         <h3 class="text-red-500 font-bold text-[10px] uppercase mb-4 tracking-widest">Nueva Fecha</h3>
                         <div class="grid grid-cols-2 gap-2 mb-2"><input id="newL" placeholder="Local" class="p-2 bg-slate-900 rounded text-sm text-white"><input id="newV" placeholder="Visitante" class="p-2 bg-slate-900 rounded text-sm text-white"></div>
-                        <div class="grid grid-cols-2 gap-2 mb-2"><input id="newTorneo" placeholder="Torneo" class="p-2 bg-slate-900 rounded text-[10px] text-white"><input id="newInst" placeholder="Instancia" class="p-2 bg-slate-900 rounded text-[10px] text-white"></div>
-                        <input id="newF" placeholder="Fecha/Hora" class="w-full p-2 mb-2 bg-slate-900 rounded text-[10px] text-slate-500">
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <input id="newTorneo" placeholder="Torneo" class="p-2 bg-slate-900 rounded text-[10px] text-white">
+                            <input id="newInst" placeholder="Instancia" class="p-2 bg-slate-900 rounded text-[10px] text-white">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mb-2">
+                            <input id="newF" placeholder="Fecha/Hora" class="p-2 bg-slate-900 rounded text-[10px] text-slate-500">
+                            <select id="newTemp" onchange="toggleAdminMundialSelector()" class="p-2 bg-slate-900 rounded text-[10px] text-white">
+                                <option value="Apertura">Liga Regular</option>
+                                <option value="Mundial">Mundial 🌍</option>
+                            </select>
+                        </div>
+                        <div id="div-admin-zona" class="hidden mb-3">
+                            <label class="block text-[8px] uppercase font-bold text-emerald-400 mb-1">Asignar a Grupo (1 al 12):</label>
+                            <select id="newZona" class="w-full p-2 bg-slate-900 rounded text-[10px] text-white border border-emerald-600/30">
+                                <option value="0">Fase Final Directa</option>
+                                ${Array.from({length: 12}, (_, i) => `<option value="${i+1}">Grupo ${String.fromCharCode(65 + i)}</option>`).join('')}
+                            </select>
+                        </div>
                         <div class="flex items-center gap-2 mb-4"><input type="checkbox" id="isElim"> <label class="text-[10px] uppercase font-bold text-red-400">Eliminación Directa</label></div>
                         <button onclick="addPartido()" class="w-full bg-red-600 p-2 rounded font-bold text-xs uppercase">Publicar</button>
                     </div>
-                    <div class="space-y-4">
+                    <div class="space-y-4 mb-6">
                         ${pendientes.map(p => `
                         <div class="card border-slate-700 bg-slate-900/50">
                             <div class="flex justify-between items-center mb-3">
-                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante}</div>
+                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante} ${p.temporada === 'Mundial' ? `(Mundial - Grupo: ${p.zonaMundial || 'Eliminatoria'})` : ''}</div>
                                 <button onclick="deletePartido('${p.id}')" class="text-[9px] bg-red-900/50 text-red-500 px-2 py-1 rounded">ELIMINAR 🗑️</button>
                             </div>
                             <div class="flex gap-1 mb-3">
@@ -184,8 +313,65 @@
                                 ` : ''}
                             </div>
                         </div>`).join('')}
+                    </div>
+                    <div class="card border-emerald-900/50 bg-slate-900/40">
+                        <h3 class="text-emerald-400 font-bold text-[10px] uppercase mb-3 tracking-widest">Carga Resultados Reales Mundial</h3>
+                        <button onclick="cerrarVedaMundial()" class="w-full ${mConfig.llavesCerradas ? 'bg-green-800 text-white' : 'bg-emerald-600'} p-2 rounded font-bold text-[10px] uppercase mb-4">${mConfig.llavesCerradas ? 'Llaves Bloqueadas ✓' : 'Cerrar Cuadros Iniciales 🔒'}</button>
+                        <div class="space-y-2 text-[9px]">
+                            <input id="adm-16" placeholder="Los 32 reales de 16avos" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.real16 ? mConfig.real16.join(',') : ''}">
+                            <input id="adm-8" placeholder="Los 16 reales de 8vos" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.real8 ? mConfig.real8.join(',') : ''}">
+                            <input id="adm-4" placeholder="Los 8 reales de 4tos" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.real4 ? mConfig.real4.join(',') : ''}">
+                            <input id="adm-2" placeholder="Los 4 reales de Semis" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.real2 ? mConfig.real2.join(',') : ''}">
+                            <input id="adm-fin" placeholder="Los 2 finalistas reales" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.realFinal ? mConfig.realFinal.join(',') : ''}">
+                            <input id="adm-cam" placeholder="Campeón Oficial 🏆" class="w-full p-2 bg-slate-900 border border-yellow-500 font-bold text-yellow-500 text-xs" value="${mConfig.realCamp || ''}">
+                            <button onclick="saveGlobalMundial()" class="w-full bg-yellow-600 text-black font-black p-2 rounded uppercase mt-2">Guardar Resultados Cuadro</button>
+                        </div>
                     </div>`;
             }
+        };
+
+        window.toggleAdminMundialSelector = () => {
+            const temp = document.getElementById('newTemp').value;
+            document.getElementById('div-admin-zona').classList.toggle('hidden', temp !== 'Mundial');
+        };
+
+        window.abrirFixtureGrupo = async (numZona) => {
+            const list = document.getElementById('modal-grupo-list');
+            document.getElementById('modal-grupo-title').innerText = `GRUPO ${String.fromCharCode(64 + numZona)} - FIXTURE`;
+            list.innerHTML = `<div class="text-center py-4 text-[10px] uppercase italic text-slate-500">Cargando zona...</div>`;
+            document.getElementById('modal-grupo-fixture').classList.remove('hidden');
+
+            const qP = await getDocs(query(collection(db, "partidos"), where("temporada", "==", "Mundial"), where("zonaMundial", "==", numZona)));
+            const partidos = qP.docs.map(d => ({id: d.id, ...d.data()}));
+            
+            const qPre = await getDocs(query(collection(db, "predicciones"), where("user", "==", currentUser)));
+            const misPreds = {};
+            qPre.forEach(d => { misPreds[d.data().partidoId] = d.data(); });
+
+            if(partidos.length === 0) {
+                list.innerHTML = `<p class="text-center text-[10px] py-6 border border-dashed border-slate-800 rounded text-slate-500">Sin partidos cargados en este grupo.</p>`;
+                return;
+            }
+
+            list.innerHTML = partidos.map(p => {
+                const yaVoto = misPreds[p.id];
+                const muroActivo = p.verOtros;
+                return `<div class="bg-slate-900 p-3 rounded-xl border ${p.finalizado ? 'border-slate-800' : yaVoto ? 'border-emerald-600/40':'border-slate-700'}">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[8px] font-black text-blue-400 uppercase">${p.instancia || 'ZONA'}</span>
+                        ${p.finalizado ? `<span class="text-[8px] bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded font-bold">FINAL: ${p.golesL} - ${p.golesV}</span>` : muroActivo ? `<button onclick="document.getElementById('modal-grupo-fixture').classList.add('hidden'); verMuro('${p.id}', '${p.local} vs ${p.visitante}')" class="text-[8px] bg-yellow-500 text-black px-1.5 py-0.5 rounded font-black">VER OTROS 👁️</button>` : `<span class="text-[8px] text-emerald-500 font-bold uppercase">Abierto</span>`}
+                    </div>
+                    <div class="flex justify-between items-center text-sm font-bold">
+                        <span class="w-1/3 truncate">${p.local}</span>
+                        <div class="flex gap-2 justify-center w-1/3">
+                            <input id="l-${p.id}" type="number" value="${yaVoto ? yaVoto.gl : ''}" ${muroActivo || p.finalizado ? 'disabled' : ''} class="w-8 h-8 bg-slate-950 rounded text-center border border-slate-700 font-black text-sm text-white">
+                            <input id="v-${p.id}" type="number" value="${yaVoto ? yaVoto.gv : ''}" ${muroActivo || p.finalizado ? 'disabled' : ''} class="w-8 h-8 bg-slate-950 rounded text-center border border-slate-700 font-black text-sm text-white">
+                        </div>
+                        <span class="w-1/3 text-right truncate">${p.visitante}</span>
+                    </div>
+                    ${(!muroActivo && !p.finalizado) ? `<button onclick="savePred('${p.id}')" class="w-full mt-2 ${yaVoto ? 'bg-emerald-700' : 'bg-blue-600'} py-1 rounded text-[10px] font-black uppercase">Guardar</button>` : ''}
+                </div>`;
+            }).join('');
         };
 
         window.verMuro = async (id, tit) => {
@@ -221,17 +407,18 @@
             const usaP = divP ? !divP.classList.contains('hidden') : false;
             const pen = usaP ? document.getElementById(`p-${id}`).value : "";
             if (gl === "" || gv === "") return alert("Poné goles.");
-            // Validaciones quitadas para que el penal sea opcional
             await setDoc(doc(db, "predicciones", `${currentUser}_${id}`), { user: currentUser, partidoId: id, gl: parseInt(gl), gv: parseInt(gv), usaPenales: usaP, penales: pen });
-            alert("¡Guardado!"); location.reload();
+            alert("¡Guardado!");
         };
 
         window.addPartido = async () => {
             const l = document.getElementById('newL').value; const v = document.getElementById('newV').value;
             const f = document.getElementById('newF').value; const t = document.getElementById('newTorneo').value;
             const i = document.getElementById('newInst').value; const elim = document.getElementById('isElim').checked;
+            const temp = document.getElementById('newTemp').value;
+            const zM = temp === 'Mundial' ? parseInt(document.getElementById('newZona').value) : 0;
             if(!l || !v) return alert("Equipos obligatorios.");
-            await addDoc(collection(db, "partidos"), { local: l, visitante: v, fecha: f, torneo: t, instancia: i, finalizado: false, verOtros: false, esProximo: false, eliminacion: elim, golesL: 0, golesV: 0, huboPenales: false, ganadorPenales: "" });
+            await addDoc(collection(db, "partidos"), { local: l, visitante: v, fecha: f, torneo: t, instancia: i, finalizado: false, verOtros: false, esProximo: false, eliminacion: elim, golesL: 0, golesV: 0, huboPenales: false, ganadorPenales: "", temporada: temp, zonaMundial: zM });
             showTab('admin');
         };
 
@@ -241,6 +428,50 @@
             const hp = esElim ? document.getElementById(`hP-${id}`).checked : false;
             const gp = esElim && hp ? document.getElementById(`resP-${id}`).value : "";
             await updateDoc(doc(db, "partidos", id), { golesL: parseInt(gl), golesV: parseInt(gv), finalizado: true, verOtros: true, esProximo: false, huboPenales: hp, ganadorPenales: gp });
+            showTab('admin');
+        };
+
+        window.saveLlave = async () => {
+            const cleanArray = (id) => document.getElementById(id).value.split(',').map(x => x.trim()).filter(x => x !== "");
+            const inst16 = cleanArray('ll-16'); const inst8 = cleanArray('ll-8');
+            const inst4 = cleanArray('ll-4'); const inst2 = cleanArray('ll-2');
+            const instFinal = cleanArray('ll-fin'); const campeon = document.getElementById('ll-cam').value.trim();
+            if(!campeon) return alert("Poné al menos tu candidato a campeón.");
+            await setDoc(doc(db, "mundial_llaves", currentUser), { inst16, inst8, inst4, inst2, instFinal, campeon });
+            alert("¡Cuadro guardado!"); showTab('mundial');
+        };
+
+        window.verMuroLlaves = async () => {
+            const q = await getDocs(collection(db, "mundial_llaves"));
+            const lista = document.getElementById('modal-list');
+            document.getElementById('modal-title').innerText = "CUADROS MUNDIALISTAS 🌍";
+            lista.innerHTML = "";
+            q.forEach(d => {
+                const data = d.data();
+                lista.innerHTML += `<div class="bg-slate-900 p-3 rounded text-xs border border-slate-700 mb-2">
+                    <div class="text-yellow-500 font-bold text-sm border-b border-slate-800 pb-1">${d.id.toUpperCase()}</div>
+                    <p><b class="text-emerald-400">Campeón:</b> ${data.campeon || '---'}</p>
+                    <p class="text-[10px] text-slate-400 truncate"><b>Final:</b> ${data.instFinal ? data.instFinal.join(', ') : ''}</p>
+                </div>`;
+            });
+            document.getElementById('modal-preds').classList.remove('hidden');
+        };
+
+        window.cerrarVedaMundial = async () => {
+            if(confirm("¿Cerrar veda total del cuadro?")) {
+                await setDoc(doc(db, "config_mundial", "global"), { llavesCerradas: true }, { merge: true });
+                showTab('admin');
+            }
+        };
+
+        window.saveGlobalMundial = async () => {
+            const cleanArray = (id) => document.getElementById(id).value.split(',').map(x => x.trim()).filter(x => x !== "");
+            await setDoc(doc(db, "config_mundial", "global"), {
+                real16: cleanArray('adm-16'), real8: cleanArray('adm-8'),
+                real4: cleanArray('adm-4'), real2: cleanArray('adm-2'),
+                realFinal: cleanArray('adm-fin'), realCampeon: document.getElementById('adm-cam').value.trim()
+            }, { merge: true });
+            alert("Resultados guardados y rankings computados.");
             showTab('admin');
         };
 
