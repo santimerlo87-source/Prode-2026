@@ -482,13 +482,33 @@
         };
 
         window.saveLlave = async () => {
+            // 1. Agarramos primero los textos planos de los inputs para poder revisarlos
+            const t16 = document.getElementById('ll-16').value;
+            const t8 = document.getElementById('ll-8').value;
+            const t4 = document.getElementById('ll-4').value;
+            const t2 = document.getElementById('ll-2').value;
+            const tfin = document.getElementById('ll-fin').value;
+            const tcam = document.getElementById('ll-cam').value;
+
+            // 2. Filtro estricto: solo minúsculas, la ñ, números, comas y espacios
+            const reglaEstricta = /^[a-zñ0-9,\s]*$/;
+
+            if (!reglaEstricta.test(t16) || !reglaEstricta.test(t8) || !reglaEstricta.test(t4) || !reglaEstricta.test(t2) || !reglaEstricta.test(tfin) || !reglaEstricta.test(tcam)) {
+                alert("🚨 ¡ALERTA! Tenés que escribir todo en MINÚSCULAS, SIN ACENTOS y separado por comas, pedazo de pajero mental.\n\nEjemplo correcto: 'argentina, brasil, francia'");
+                return; // Frena el guardado
+            }
+
+            // 3. Tu lógica original (si pasó el filtro, procesa y guarda)
             const cleanArray = (id) => document.getElementById(id).value.split(',').map(x => x.trim()).filter(x => x !== "");
             const inst16 = cleanArray('ll-16'); const inst8 = cleanArray('ll-8');
             const inst4 = cleanArray('ll-4'); const inst2 = cleanArray('ll-2');
-            const instFinal = cleanArray('ll-fin'); const campeon = document.getElementById('ll-cam').value.trim();
+            const instFinal = cleanArray('ll-fin'); const campeon = tcam.trim();
+            
             if(!campeon) return alert("Poné al menos tu candidato a campeón.");
+            
             await setDoc(doc(db, "mundial_llaves", currentUser), { inst16, inst8, inst4, inst2, instFinal, campeon });
-            alert("¡Cuadro guardado!"); showTab('mundial');
+            alert("¡Cuadro guardado con éxito y formato perfecto! 🔥"); 
+            showTab('mundial');
         };
 
         window.verMuroLlaves = async () => {
