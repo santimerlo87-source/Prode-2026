@@ -235,29 +235,45 @@
             }
 
             if (tab === 'ranking') {
-                const pSnap = await getDocs(collection(db, "partidos"));
-                const predSnap = await getDocs(collection(db, "predicciones"));
-                const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
-                
-                const partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
-                const preds = predSnap.docs.map(d => d.data());
-                
+                // Inicializar datos por defecto para que nunca tire error si falla Firebase
+                let partidosFin = [];
+                let preds = [];
                 let llavesData = {};
-                llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
 
-                // 1. APERTURA: Queda congelado con los valores fijos finales
-                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_APERTURA_FINAL[u].pts, ex: PUNTOS_APERTURA_FINAL[u].ex }));
+                // Intentar traer los datos de Firebase de forma segura
+                try {
+                    const pSnap = await getDocs(collection(db, "partidos"));
+                    partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
+                } catch(e) { console.log("Error leyendo partidos:", e); }
+
+                try {
+                    const predSnap = await getDocs(collection(db, "predicciones"));
+                    preds = predSnap.docs.map(d => d.data());
+                } catch(e) { console.log("Error leyendo predicciones:", e); }
+
+                try {
+                    const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
+                    llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
+                } catch(e) { console.log("Error leyendo llaves:", e); }
+
+                // Asegurar que mConfig exista para que no rompa el cálculo del mundial
+                if (typeof mConfig === 'undefined') {
+                    window.mConfig = { llavesCerradas: false, real16:[], real8:[], real4:[], real2:[], realFinal:[], realCampeon:"" };
+                }
+
+                // 1. APERTURA: Valores fijos congelados
+                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_APERTURA_FINAL[u]?.pts || 0, ex: PUNTOS_APERTURA_FINAL[u]?.ex || 0 }));
                 
-                // 2. CLAUSURA: Arranca en 0 y sumará solo partidos de esta temporada
+                // 2. CLAUSURA: Va desde 0
                 let tClau = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
-                // 3. ANUAL: Arranca con el colchón del Apertura y sumará los puntos del Clausura encima
-                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_APERTURA_FINAL[u].pts, ex: PUNTOS_APERTURA_FINAL[u].ex }));
+                // 3. ANUAL: Suma el colchón del Apertura
+                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_APERTURA_FINAL[u]?.pts || 0, ex: PUNTOS_APERTURA_FINAL[u]?.ex || 0 }));
                 
-                // 4. MUNDIAL: Arranca en 0 para más adelante
+                // 4. MUNDIAL: Va desde 0
                 let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
-                // Procesar puntos dinámicos de partidos jugados
+                // Procesar puntos de partidos finalizados
                 partidosFin.forEach(p => { 
                     preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
                         const i = USERS.indexOf(pr.user); 
@@ -283,7 +299,7 @@
                     }); 
                 });
 
-                // Procesar puntos de las llaves del Mundial
+                // Procesar puntos del cuadro del Mundial de forma segura
                 USERS.forEach((u, idx) => {
                     const ll = llavesData[u];
                     if(ll) {
@@ -298,11 +314,14 @@
                     }
                 });
 
+                // Ordenar las tablas
                 const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
                 tAp.sort(sortF); tClau.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
                 
+                // Función interna para renderizar las tablas HTML
                 const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
                 
+                // Inyectar el HTML en el contenedor principal
                 container.innerHTML = `
                     <div class="titulo-seccion text-yellow-500 border-yellow-500">Clausura 2026 ⚽ (EN VIVO)</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tClau)}</div>
                     <div class="titulo-seccion text-slate-400 border-slate-700">Apertura 2026 🔒 (Finalizado - Ganador: Esculapio)</div><div class="card bg-slate-800/40 px-2 shadow-inner opacity-60">${renderT(tAp)}</div>
