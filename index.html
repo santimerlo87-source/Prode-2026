@@ -245,10 +245,19 @@
                 let llavesData = {};
                 llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
 
-                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
-                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
+                // 1. APERTURA: Queda congelado con los valores fijos finales
+                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_APERTURA_FINAL[u].pts, ex: PUNTOS_APERTURA_FINAL[u].ex }));
+                
+                // 2. CLAUSURA: Arranca en 0 y sumará solo partidos de esta temporada
+                let tClau = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
+                
+                // 3. ANUAL: Arranca con el colchón del Apertura y sumará los puntos del Clausura encima
+                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_APERTURA_FINAL[u].pts, ex: PUNTOS_APERTURA_FINAL[u].ex }));
+                
+                // 4. MUNDIAL: Arranca en 0 para más adelante
                 let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
+                // Procesar puntos dinámicos de partidos jugados
                 partidosFin.forEach(p => { 
                     preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
                         const i = USERS.indexOf(pr.user); 
@@ -264,16 +273,17 @@
                                 ptsSumar += 1;
                             }
                             
-                            if(p.temporada === "Mundial") {
+                            if(p.temporada === "Clausura") {
+                                tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
+                                tAn[i].pts += ptsSumar; tAn[i].ex += esEx;
+                            } else if(p.temporada === "Mundial") {
                                 tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
-                            } else {
-                                tAp[i].pts += ptsSumar; tAn[i].pts += ptsSumar;
-                                if(ex) { tAp[i].ex += 1; tAn[i].ex += 1; }
                             }
                         } 
                     }); 
                 });
 
+                // Procesar puntos de las llaves del Mundial
                 USERS.forEach((u, idx) => {
                     const ll = llavesData[u];
                     if(ll) {
@@ -289,13 +299,15 @@
                 });
 
                 const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
-                tAp.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
+                tAp.sort(sortF); tClau.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
+                
                 const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
                 
                 container.innerHTML = `
-                    <div class="titulo-seccion text-emerald-400 border-emerald-400">Mundial 2026 🌍</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tMun)}</div>
-                    <div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div>
-                    <div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div>
+                    <div class="titulo-seccion text-yellow-500 border-yellow-500">Clausura 2026 ⚽ (EN VIVO)</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tClau)}</div>
+                    <div class="titulo-seccion text-slate-400 border-slate-700">Apertura 2026 🔒 (Finalizado - Ganador: Esculapio)</div><div class="card bg-slate-800/40 px-2 shadow-inner opacity-60">${renderT(tAp)}</div>
+                    <div class="titulo-seccion text-cyan-400 border-cyan-400">Anual 2026 🔥 (Acumulada)</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div>
+                    <div class="titulo-seccion text-emerald-400 border-emerald-400">Mundial 2026 🌍 (Próximamente)</div><div class="card bg-slate-800/40 px-2 shadow-inner opacity-75">${renderT(tMun)}</div>
                     <div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div>
                     <div class="card bg-red-900/10 text-[10px] space-y-1">
                         <p>• Exacto: +3 pts | Tendencia: +1 pto.</p>
