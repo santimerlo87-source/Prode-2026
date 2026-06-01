@@ -235,35 +235,45 @@
             }
 
             if (tab === 'ranking') {
-                // Variables seguras por si Firebase tarda en responder
+                // Inicializar datos por defecto para que nunca tire error si falla Firebase
                 let partidosFin = [];
                 let preds = [];
                 let llavesData = {};
 
+                // Intentar traer los datos de Firebase de forma segura
                 try {
                     const pSnap = await getDocs(collection(db, "partidos"));
                     partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
+                } catch(e) { console.log("Error leyendo partidos:", e); }
+
+                try {
                     const predSnap = await getDocs(collection(db, "predicciones"));
                     preds = predSnap.docs.map(d => d.data());
+                } catch(e) { console.log("Error leyendo predicciones:", e); }
+
+                try {
                     const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
                     llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
-                } catch(e) { console.log("Error leyendo Firebase en ranking:", e); }
+                } catch(e) { console.log("Error leyendo llaves:", e); }
 
-                // 1. APERTURA CONGELADO: Metemos los puntos fijos acá adentro directamente para que no dependa de variables de afuera
-                const APERTURA_FIJO = { "Kako": { pts: 57, ex: 10 }, "Esculapio": { pts: 54, ex: 6 }, "Popa": { pts: 50, ex: 8 }, "Fer": { pts: 49, ex: 8 }, "Bauti": { pts: 22, ex: 5 } };
+                // Asegurar que mConfig exista para que no rompa el cálculo del mundial
+                if (typeof mConfig === 'undefined') {
+                    window.mConfig = { llavesCerradas: false, real16:[], real8:[], real4:[], real2:[], realFinal:[], realCampeon:"" };
+                }
 
-                let tAp = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
+                // 1. APERTURA: Valores fijos congelados
+                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_APERTURA_FINAL[u]?.pts || 0, ex: PUNTOS_APERTURA_FINAL[u]?.ex || 0 }));
                 
-                // 2. CLAUSURA ACTUAL: Va desde 0 y solo sumará lo nuevo
+                // 2. CLAUSURA: Va desde 0
                 let tClau = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
-                // 3. ANUAL ACUMULADA: Arranca con la base del Apertura congelado y sumará lo nuevo encima
-                let tAn = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
+                // 3. ANUAL: Suma el colchón del Apertura
+                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_APERTURA_FINAL[u]?.pts || 0, ex: PUNTOS_APERTURA_FINAL[u]?.ex || 0 }));
                 
-                // 4. MUNDIAL DE RESERVA: En 0 para más adelante
+                // 4. MUNDIAL: Va desde 0
                 let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
-                // Cómputo de partidos finalizados desde la base de datos
+                // Procesar puntos de partidos finalizados
                 partidosFin.forEach(p => { 
                     preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
                         const i = USERS.indexOf(pr.user); 
@@ -279,10 +289,9 @@
                                 ptsSumar += 1;
                             }
                             
-                            // FILTRO INTELIGENTE: Clasifica los puntos dependiendo de cómo cargues el partido en el Admin
                             if(p.temporada === "Clausura") {
                                 tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
-                                tAn[i].pts += ptsSumar; tAn[i].ex += esEx; // Suma también a la acumulada anual
+                                tAn[i].pts += ptsSumar; tAn[i].ex += esEx;
                             } else if(p.temporada === "Mundial") {
                                 tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
                             }
@@ -290,7 +299,7 @@
                     }); 
                 });
 
-                // Cómputo de las llaves del mundial (Sigue funcionando igual para el futuro)
+                // Procesar puntos del cuadro del Mundial de forma segura
                 USERS.forEach((u, idx) => {
                     const ll = llavesData[u];
                     if(ll) {
@@ -305,13 +314,14 @@
                     }
                 });
 
-                // Ordenamos las 4 tablas por puntaje de mayor a menor
+                // Ordenar las tablas
                 const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
                 tAp.sort(sortF); tClau.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
                 
+                // Función interna para renderizar las tablas HTML
                 const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
                 
-                // Renderizado en pantalla con las 4 tablas ordenadas
+                // Inyectar el HTML en el contenedor principal
                 container.innerHTML = `
                     <div class="titulo-seccion text-yellow-500 border-yellow-500">Clausura 2026 ⚽ (EN VIVO)</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tClau)}</div>
                     <div class="titulo-seccion text-slate-400 border-slate-700">Apertura 2026 🔒 (Finalizado - Ganador: Esculapio)</div><div class="card bg-slate-800/40 px-2 shadow-inner opacity-60">${renderT(tAp)}</div>
@@ -324,6 +334,7 @@
                         <p>• Cuadro Mundial: 16avos (+1), 8vos (+2), 4tos (+3), Semis (+4), Final (+5), Campeón (+10).</p>
                     </div>`;
             }
+
       
 
             if (tab === 'titulos') {
