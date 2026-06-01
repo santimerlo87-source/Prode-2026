@@ -329,7 +329,46 @@
       
 
             if (tab === 'titulos') {
-                container.innerHTML = `<div class="titulo-seccion">Títulos</div><div class="card bg-slate-800/40 text-sm space-y-2 mb-6 shadow-inner"><div class="flex justify-between border-b border-slate-700/50 pb-2"><span>Esculapio</span><b class="text-yellow-500">3 🏆</b></div>${USERS.filter(u => u !== "Esculapio").map(u => `<div class="flex justify-between text-slate-400"><span>${u}</span><b>0</b></div>`).join('')}</div><div class="titulo-seccion">Historia</div><div class="card bg-slate-800/40 text-[11px] space-y-2 mb-6 shadow-inner"><div class="flex justify-between border-b border-slate-700/30 pb-1"><span>Apertura 2025</span><b class="text-yellow-500">Esculapio 👑</b></div><div class="flex justify-between border-b border-slate-700/30 pb-1"><span>Clausura 2025</span><b class="text-yellow-500">Esculapio 👑</b></div><div class="flex justify-between"><span>Anual 2025</span><b class="text-yellow-500">Esculapio 👑</b></div></div><div class="titulo-seccion text-red-500 border-red-500 uppercase tracking-tighter">El Cementerio</div><div class="card bg-red-900/10 flex justify-between text-sm items-center"><span>Descenso 2025</span><b class="text-red-500 uppercase font-black">Bauti 🅱️</b></div>`;
+                container.innerHTML = `
+                    <div class="titulo-seccion">Títulos</div>
+                    <div class="card bg-slate-800/40 text-sm space-y-2 mb-6 shadow-inner">
+                        <div class="flex justify-between border-b border-slate-700/50 pb-2">
+                            <span>Esculapio</span>
+                            <b class="text-yellow-500">4 🏆</b>
+                        </div>
+                        ${USERS.filter(u => u !== "Esculapio").map(u => `
+                            <div class="flex justify-between text-slate-400">
+                                <span>${u}</span>
+                                <b>0</b>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="titulo-seccion">Historia</div>
+                    <div class="card bg-slate-800/40 text-[11px] space-y-2 mb-6 shadow-inner">
+                        <div class="flex justify-between border-b border-slate-700/30 pb-1">
+                            <span>Apertura 2025</span>
+                            <b class="text-yellow-500">Esculapio 👑</b>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-700/30 pb-1">
+                            <span>Clausura 2025</span>
+                            <b class="text-yellow-500">Esculapio 👑</b>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-700/30 pb-1">
+                            <span>Anual 2025</span>
+                            <b class="text-yellow-500">Esculapio 👑</b>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Apertura 2026</span>
+                            <b class="text-yellow-500">Esculapio 👑</b>
+                        </div>
+                    </div>
+                    
+                    <div class="titulo-seccion text-red-500 border-red-500 uppercase tracking-tighter">El Cementerio</div>
+                    <div class="card bg-red-900/10 flex justify-between text-sm items-center">
+                        <span>Descenso 2025</span>
+                        <b class="text-red-500 uppercase font-black">Bauti 🅱️</b>
+                    </div>`;
             }
 
             if (tab === 'aura') {
