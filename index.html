@@ -234,357 +234,143 @@
                 container.innerHTML = html;
             }
 
-            <!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prode Amigos 2026 🏆</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { background: #0f172a; color: white; font-family: sans-serif; }
-        .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
-        input { color: white; }
-        input:disabled { opacity: 0.5; cursor: not-allowed; }
-        .titulo-seccion { color: #eab308; font-weight: 800; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.1em; margin-bottom: 0.75rem; border-left: 4px solid #eab308; padding-left: 8px; }
-        .modal { background: rgba(0,0,0,0.9); position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none;  scrollbar-width: none; }
-        .proximo-badget { background: #eab308; color: #000; font-size: 9px; font-weight: 900; padding: 2px 6px; border-radius: 4px; text-transform: uppercase; }
-        .btn-penales-off { background: #334155; color: #94a3b8; }
-        .btn-penales-on { background: #eab308; color: #000; font-weight: bold; }
-        /* Nuevos estilos específicos para la sección Mundial */
-        .grupo-btn { background: linear-gradient(135deg, #1d4ed8 0%, #b91c1c 50%, #15803d 100%); transition: transform 0.2s; }
-        .grupo-btn:hover { transform: scale(1.03); }
-    </style>
-</head>
-<body>
-    <div id="app" class="max-w-md mx-auto p-4">
-        <div class="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-            <h1 class="text-2xl font-bold text-yellow-500 italic">PRODE 2026</h1>
-            <div id="userInfo" class="text-right text-[10px] text-slate-400 uppercase tracking-tighter"></div>
-        </div>
-        <div class="flex gap-1 mb-6 overflow-x-auto pb-2 no-scrollbar">
-            <button onclick="showTab('partidos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Partidos</button>
-            <button onclick="showTab('mundial')" class="flex-none bg-emerald-600 px-3 py-2 rounded font-bold text-[9px] uppercase shadow-lg shadow-emerald-500/20">Mundial 🌍</button>
-            <button onclick="showTab('ranking')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Ranking</button>
-            <button onclick="showTab('titulos')" class="flex-none bg-slate-700 px-3 py-2 rounded font-bold text-[9px] uppercase">Títulos</button>
-            <button onclick="showTab('aura')" class="flex-none bg-indigo-700 px-3 py-2 rounded font-bold text-[9px] uppercase shadow-lg shadow-indigo-500/20">AURA ✨</button>
-            <button id="adminBtn" onclick="showTab('admin')" class="hidden flex-none bg-red-600 px-3 py-2 rounded font-bold text-[9px] uppercase">Admin</button>
-        </div>
-        <div id="tab-content" class="min-h-[200px]"></div>
-    </div>
+            if (tab === 'ranking') {
 
-    <div id="modal-preds" class="modal hidden">
-        <div class="bg-slate-800 w-full max-w-sm rounded-xl p-6 border border-slate-600 shadow-2xl">
-            <h3 id="modal-title" class="text-yellow-500 font-bold mb-4 uppercase text-xs">Pronósticos</h3>
-            <div id="modal-list" class="space-y-2 mb-6 max-h-[250px] overflow-y-auto no-scrollbar"></div>
-            <button onclick="closeModal()" class="w-full bg-slate-600 p-2 rounded font-bold text-xs uppercase">Cerrar</button>
-        </div>
-    </div>
+                const pSnap = await getDocs(collection(db, "partidos"));
 
-    <div id="modal-grupo-fixture" class="modal hidden">
-        <div class="bg-slate-950 w-full max-w-md rounded-xl p-4 border border-blue-600/40 shadow-2xl max-h-[90vh] flex flex-col">
-            <h3 id="modal-grupo-title" class="text-emerald-400 font-black mb-4 uppercase text-center tracking-widest text-sm border-b border-slate-800 pb-2">Grupo X</h3>
-            <div id="modal-grupo-list" class="space-y-3 overflow-y-auto no-scrollbar flex-1 pb-4"></div>
-            <button onclick="document.getElementById('modal-grupo-fixture').classList.add('hidden')" class="w-full bg-red-700 p-2.5 rounded font-bold text-xs uppercase tracking-wider mt-2">Volver</button>
-        </div>
-    </div>
+                const predSnap = await getDocs(collection(db, "predicciones"));
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, updateDoc, deleteDoc, query, where, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+                const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
 
-        const p1 = "AIzaSyC4w9O"; const p2 = "eswyNimznnNL6s"; const p3 = "AUXAtrb80Kft9E";
-        const firebaseConfig = { apiKey: p1+p2+p3, authDomain: "predicciones-2026.firebaseapp.com", projectId: "predicciones-2026", storageBucket: "predicciones-2026.firebasestorage.app", messagingSenderId: "226705370126", appId: "1:226705370126:web:04dfa828c687c9ee5ee05f" };
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+                
 
-        const PUNTOS_BASE = { "Kako": { pts: 57, ex: 10 }, "Esculapio": { pts: 54, ex: 6 }, "Popa": { pts: 50, ex: 8 }, "Fer": { pts: 49, ex: 8 }, "Bauti": { pts: 22, ex: 5 } };
-        const USERS = Object.keys(PUNTOS_BASE);
-        let currentUser = localStorage.getItem('prode_user');
+                const partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
 
-        window.login = (name) => { localStorage.setItem('prode_user', name); location.reload(); };
+                const preds = predSnap.docs.map(d => d.data());
 
-        window.togglePenalesInput = (id) => {
-            const div = document.getElementById(`div-p-${id}`);
-            const btn = document.getElementById(`btn-p-${id}`);
-            if (div.classList.contains('hidden')) {
-                div.classList.remove('hidden');
-                btn.className = "w-full mt-2 p-1 rounded text-[10px] btn-penales-on uppercase";
-            } else {
-                div.classList.add('hidden');
-                btn.className = "w-full mt-2 p-1 rounded text-[10px] btn-penales-off uppercase";
-                document.getElementById(`p-${id}`).value = "";
-            }
-        };
+                
 
-        window.showTab = async (tab) => {
-            const container = document.getElementById('tab-content');
-            container.innerHTML = `<div class="text-center py-10 text-slate-500 italic text-[10px] uppercase">Cargando...</div>`;
+                let llavesData = {};
 
-            // Configuración global de llaves del mundial
-            let mConfig = { llavesCerradas: false, real16:[], real8:[], real4:[], real2:[], realFinal:[], realCampeon:"" };
-            const mDoc = await getDoc(doc(db, "config_mundial", "global"));
-            if(mDoc.exists()) mConfig = mDoc.data();
+                llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
 
-            if (tab === 'partidos') {
-                const qP = await getDocs(collection(db, "partidos"));
-                const todos = qP.docs.map(d => ({id: d.id, ...d.data()}));
-                // Filtra para que en esta pestaña no salgan los partidos asignados a grupos del mundial
-                const proximos = todos.filter(p => !p.finalizado && p.temporada !== "Mundial");
-                const destacado = todos.find(p => p.esProximo && !p.finalizado);
-                const qPre = await getDocs(query(collection(db, "predicciones"), where("user", "==", currentUser)));
-                const misPreds = {};
-                qPre.forEach(d => { misPreds[d.data().partidoId] = d.data(); });
 
-                let html = "";
-                if (destacado) {
-                    html += `<div class="card border-yellow-500/50 bg-yellow-500/5 mb-6"><div class="flex justify-between items-center mb-2"><span class="proximo-badget">Próximo Partido</span><span class="text-[10px] text-slate-400 font-bold uppercase">${destacado.fecha || ''}</span></div><div class="text-center text-[10px] text-yellow-600 font-bold uppercase mb-1">${destacado.torneo || ''} - ${destacado.instancia || ''}</div><div class="text-center text-xl font-black text-yellow-500 italic uppercase">${destacado.local} vs ${destacado.visitante}</div></div><div class="titulo-seccion">Pronosticar</div>`;
-                }
 
-                html += proximos.map(p => {
-                    const yaVoto = misPreds[p.id];
-                    const muroActivo = p.verOtros;
-                    const usaP = yaVoto?.usaPenales;
-                    return `<div class="card ${yaVoto ? 'border-green-600/30' : ''}"><div class="flex justify-between items-start mb-2"><div class="flex flex-col"><span class="text-[9px] text-blue-400 font-bold uppercase">${p.torneo || 'TORNEO'}</span><span class="text-[8px] text-slate-500 font-bold uppercase">${p.instancia || 'FECHA'}</span></div>${muroActivo ? `<button onclick="verMuro('${p.id}', '${p.local} vs ${p.visitante}')" class="text-[8px] bg-yellow-500 px-2 py-1 rounded text-black font-black animate-pulse">VER OTROS 👁️</button>` : `<span class="text-[8px] text-green-500 italic font-bold">ABIERTO</span>`}</div><div class="flex justify-between items-center text-lg font-bold"><span>${p.local}</span><div class="flex gap-2"><input id="l-${p.id}" type="number" value="${yaVoto ? yaVoto.gl : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"> <input id="v-${p.id}" type="number" value="${yaVoto ? yaVoto.gv : ''}" ${muroActivo ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border ${muroActivo ? 'border-slate-700 text-slate-500' : 'border-slate-600'} font-bold text-white"></div><span>${p.visitante}</span></div>
-                    ${p.eliminacion && !muroActivo ? `
-                        <button id="btn-p-${p.id}" onclick="togglePenalesInput('${p.id}')" class="w-full mt-2 p-1 rounded text-[10px] ${usaP ? 'btn-penales-on' : 'btn-penales-off'} uppercase">¿PENALES?</button>
-                        <div id="div-p-${p.id}" class="${usaP ? '' : 'hidden'} mt-2 p-2 bg-slate-800/50 rounded-lg text-center">
-                            <select id="p-${p.id}" class="bg-slate-900 text-[10px] p-1 rounded border border-slate-600 text-white">
-                                <option value="">- Quién avanza -</option>
-                                <option value="L" ${yaVoto?.penales === 'L' ? 'selected' : ''}>${p.local}</option>
-                                <option value="V" ${yaVoto?.penales === 'V' ? 'selected' : ''}>${p.visitante}</option>
-                            </select>
-                        </div>
-                    ` : ''}
-                    ${!muroActivo ? `<button onclick="savePred('${p.id}')" class="w-full mt-4 ${yaVoto ? 'bg-green-700' : 'bg-yellow-600'} p-2 rounded text-xs font-bold uppercase transition">${yaVoto ? 'Actualizar ✓' : 'Guardar'}</button>` : `<div class="w-full mt-4 bg-slate-800 p-2 rounded text-[10px] text-center text-slate-500 font-bold uppercase border border-slate-700 italic">Votación cerrada</div>`}</div>`;
-                }).join('') || "<p class='text-center py-10 text-slate-500 text-[10px] uppercase font-bold'>No hay partidos</p>";
-                container.innerHTML = html;
-            }
+                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
 
-            if (tab === 'mundial') {
-                let uLlaveDoc = await getDoc(doc(db, "mundial_llaves", currentUser));
-                let uLlave = uLlaveDoc.exists() ? uLlaveDoc.data() : null;
+                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
 
-                // 1. CONSULTA NUEVA: Trae partidos del Mundial que sean de Fase Final (zonaMundial == 0)
-                const qFf = await getDocs(query(collection(db, "partidos"), where("temporada", "==", "Mundial"), where("zonaMundial", "==", 0)));
-                const eliminatoriasMundial = qFf.docs.map(d => ({id: d.id, ...d.data()}));
-                
-                // Trae las predicciones del usuario logueado para poder mostrar si ya votó o no
-                const qPre = await getDocs(query(collection(db, "predicciones"), where("user", "==", currentUser)));
-                const misPreds = {};
-                qPre.forEach(d => { misPreds[d.data().partidoId] = d.data(); });
+                let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
 
-                // 2. HTML de los 12 Grupos
-                let html = `
-                <div class="titulo-seccion text-emerald-400 border-emerald-500 font-black">Fase de Grupos 🌍</div>
-                <div class="card bg-slate-900/80 border-slate-700 p-4 mb-6">
-                    <p class="text-[10px] text-slate-400 uppercase tracking-wide font-bold mb-3 text-center">Seleccioná un grupo para cargar tus pronósticos de zona:</p>
-                    <div class="grid grid-cols-3 gap-2">
-                        ${Array.from({length: 12}, (_, i) => `
-                            <button onclick="abrirFixtureGrupo(${i+1})" class="grupo-btn text-white font-black text-center py-3 px-1 rounded-lg text-xs uppercase tracking-tighter shadow-md">
-                                Grupo ${String.fromCharCode(64 + i + 1)}
-                            </button>
-                        `).join('')}
-                    </div>
-                </div>`;
+                
 
-                // 3. SECCIÓN NUEVA: Si cargás un partido de zona 0, se dibuja acá en el medio automáticamente
-                if(eliminatoriasMundial.length > 0) {
-                    html += `<div class="titulo-seccion text-blue-400 border-blue-500 font-black">Partidos de Llave Mano a Mano ⚔️</div>`;
-                    html += eliminatoriasMundial.map(p => {
-                        const yaVoto = misPreds[p.id];
-                        const muroActivo = p.verOtros;
-                        const usaP = yaVoto?.usaPenales;
-                        return `
-                        <div class="card ${p.finalizado ? 'border-slate-800' : yaVoto ? 'border-green-600/30' : ''}">
-                            <div class="flex justify-between items-start mb-2">
-                                <div class="flex flex-col">
-                                    <span class="text-[9px] text-yellow-500 font-bold uppercase">${p.torneo || 'MUNDIAL'}</span>
-                                    <span class="text-[8px] text-slate-500 font-bold uppercase">${p.instancia || 'FASE FINAL'}</span>
-                                </div>
-                                ${p.finalizado ? `<span class="text-[8px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded font-bold">FINAL: ${p.golesL} - ${p.golesV} ${p.huboPenales ? `(P: ${p.ganadorPenales})`:''}</span>` : muroActivo ? `<button onclick="verMuro('${p.id}', '${p.local} vs ${p.visitante}')" class="text-[8px] bg-yellow-500 text-black font-black px-2 py-1 rounded animate-pulse">VER OTROS 👁️</button>` : `<span class="text-[8px] text-green-500 italic font-bold">ABIERTO</span>`}
-                            </div>
-                            <div class="flex justify-between items-center text-lg font-bold">
-                                <span>${p.local}</span>
-                                <div class="flex gap-2">
-                                    <input id="l-${p.id}" type="number" value="${yaVoto ? yaVoto.gl : ''}" ${muroActivo || p.finalizado ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border border-slate-600 font-bold text-white">
-                                    <input id="v-${p.id}" type="number" value="${yaVoto ? yaVoto.gv : ''}" ${muroActivo || p.finalizado ? 'disabled' : ''} class="w-10 h-10 bg-slate-900 rounded text-center border border-slate-600 font-bold text-white">
-                                </div>
-                                <span>${p.visitante}</span>
-                            </div>
-                            ${!p.finalizado && !muroActivo ? `
-                                <button id="btn-p-${p.id}" onclick="togglePenalesInput('${p.id}')" class="w-full mt-2 p-1 rounded text-[10px] ${usaP ? 'btn-penales-on' : 'btn-penales-off'} uppercase">¿PENALES?</button>
-                                <div id="div-p-${p.id}" class="${usaP ? '' : 'hidden'} mt-2 p-2 bg-slate-800/50 rounded-lg text-center">
-                                    <select id="p-${p.id}" class="bg-slate-900 text-[10px] p-1 rounded border border-slate-600 text-white">
-                                        <option value="">- Quién avanza -</option>
-                                        <option value="L" ${yaVoto?.penales === 'L' ? 'selected' : ''}>${p.local}</option>
-                                        <option value="V" ${yaVoto?.penales === 'V' ? 'selected' : ''}>${p.visitante}</option>
-                                    </select>
-                                </div>
-                                <button onclick="savePred('${p.id}')" class="w-full mt-4 ${yaVoto ? 'bg-green-700' : 'bg-yellow-600'} p-2 rounded text-xs font-bold uppercase transition">${yaVoto ? 'Actualizar ✓' : 'Guardar'}</button>
-                            ` : !p.finalizado ? `<div class="w-full mt-4 bg-slate-800 p-2 rounded text-[10px] text-center text-slate-500 font-bold uppercase border border-slate-700 italic">Votación cerrada</div>` : ''}
-                        </div>`;
-                    }).join('');
-                }
+                partidosFin.forEach(p => { 
 
-                // 4. Conector para los inputs de texto (Se une con el "if(!mConfig.llavesCerradas)" que ya tenés abajo)
-                html += `<div class="titulo-seccion text-red-500 border-red-500 font-black">Tu Predicción del Cuadro Final</div>`;
+                    preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
 
-                if(!mConfig.llavesCerradas) {
-                    html += `<div class="card bg-slate-900 border-slate-700">
-                        <p class="text-[9px] text-slate-400 uppercase mb-4 font-bold text-center">Armá tu proyección del cuadro eliminatorio completo:</p>
-                        <div class="space-y-3 text-xs">
-                            <div><label class="block text-[9px] uppercase font-bold text-blue-400 mb-1">A 16avos de Final (32 selecciones separadas por coma):</label>
-                            <input id="ll-16" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.inst16 ? uLlave.inst16.join(', ') : ''}" placeholder="arg, bra, fra..."></div>
-                            <div><label class="block text-[9px] uppercase font-bold text-red-400 mb-1">A 8vos de Final (16 selecciones):</label>
-                            <input id="ll-8" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.inst8 ? uLlave.inst8.join(', ') : ''}"></div>
-                            <div><label class="block text-[9px] uppercase font-bold text-emerald-400 mb-1">A 4tos de Final (8 selecciones):</label>
-                            <input id="ll-4" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.inst4 ? uLlave.inst4.join(', ') : ''}"></div>
-                            <div><label class="block text-[9px] uppercase font-bold text-blue-400 mb-1">A Semifinales (4 selecciones):</label>
-                            <input id="ll-2" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.inst2 ? uLlave.inst2.join(', ') : ''}"></div>
-                            <div><label class="block text-[9px] uppercase font-bold text-red-400 mb-1">A la Final (2 selecciones):</label>
-                            <input id="ll-fin" type="text" class="w-full p-2 bg-slate-950 border border-slate-800 rounded text-xs text-white" value="${uLlave?.instFinal ? uLlave.instFinal.join(', ') : ''}"></div>
-                            <div><label class="block text-[9px] uppercase font-bold text-yellow-500 mb-1">🏆 CAMPEÓN DEL MUNDO INICIAL (+10 pts):</label>
-                            <input id="ll-cam" type="text" class="w-full p-2 bg-slate-950 border border-yellow-500/50 rounded text-sm font-bold text-yellow-500" value="${uLlave?.campeon ? uLlave.campeon : ''}"></div>
-                            <button onclick="saveLlave()" class="w-full mt-2 bg-emerald-600 hover:bg-emerald-700 p-2 rounded font-black uppercase text-xs">Guardar Cuadro Completo</button>
-                        </div>
-                    </div>`;
-                } else {
-                    html += `<div class="card bg-slate-900 border-red-600/30">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-[9px] bg-red-900/60 text-red-400 px-2 py-1 rounded font-black uppercase">Veda Cerrada 🔒</span>
-                            <button onclick="verMuroLlaves()" class="text-[8px] bg-yellow-500 text-black font-black px-2 py-1 rounded">VER LLAVES OTRAS 👁️</button>
-                        </div>
-                        <div class="text-xs space-y-2">
-                            <p class="truncate"><b class="text-blue-400">Tus 16avos:</b> ${uLlave?.inst16 ? uLlave.inst16.join(', ') : 'No ingresado'}</p>
-                            <p class="truncate"><b class="text-red-400">Tus 8vos:</b> ${uLlave?.inst8 ? uLlave.inst8.join(', ') : 'No ingresado'}</p>
-                            <p class="truncate"><b class="text-emerald-400">Tus 4tos:</b> ${uLlave?.inst4 ? uLlave.inst4.join(', ') : 'No ingresado'}</p>
-                            <p class="truncate"><b class="text-blue-400">Tus Semis:</b> ${uLlave?.inst2 ? uLlave.inst2.join(', ') : 'No ingresado'}</p>
-                            <p class="truncate"><b class="text-red-400">Tu Final:</b> ${uLlave?.instFinal ? uLlave.instFinal.join(', ') : 'No ingresado'}</p>
-                            <p class="text-yellow-500 font-bold"><b>Tu Campeón:</b> ${uLlave?.campeon ? uLlave.campeon : 'No ingresado'}</p>
-                        </div>
-                    </div>`;
-                }
-                container.innerHTML = html;
-            }
+                        const i = USERS.indexOf(pr.user); 
 
-            if (tab === 'ranking') {
-                const pSnap = await getDocs(collection(db, "partidos"));
-                const predSnap = await getDocs(collection(db, "predicciones"));
-                const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
-                
-                const partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
-                const preds = predSnap.docs.map(d => d.data());
-                
-                let llavesData = {};
-                llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
+                        if (i !== -1) { 
 
-                let tAp = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
-                let tAn = USERS.map(u => ({ nombre: u, pts: PUNTOS_BASE[u].pts, ex: PUNTOS_BASE[u].ex }));
-                let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
-                
-                partidosFin.forEach(p => { 
-                    preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
-                        const i = USERS.indexOf(pr.user); 
-                        if (i !== -1) { 
-                            const ex = pr.gl == p.golesL && pr.gv == p.golesV; 
-                            const gan = (pr.gl > pr.gv && p.golesL > p.golesV) || (pr.gl < pr.gv && p.golesL < p.golesV) || (pr.gl == pr.gv && p.golesL == p.golesV); 
-                            let ptsSumar = 0;
-                            let esEx = 0;
-                            if(ex) { ptsSumar = 3; esEx = 1; } 
-                            else if(gan) { ptsSumar = 1; }
-                            
-                            if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
-                                ptsSumar += 1;
-                            }
-                            
-                            if(p.temporada === "Mundial") {
-                                tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
-                            } else {
-                                tAp[i].pts += ptsSumar; tAn[i].pts += ptsSumar;
-                                if(ex) { tAp[i].ex += 1; tAn[i].ex += 1; }
-                            }
-                        } 
-                    }); 
-                });
+                            const ex = pr.gl == p.golesL && pr.gv == p.golesV; 
 
-                USERS.forEach((u, idx) => {
-                    const ll = llavesData[u];
-                    if(ll) {
-                        if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
-                        if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
-                        if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
-                        if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
-                        if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
-                        if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) {
-                            tMun[idx].pts += 10;
-                        }
-                    }
-                });
+                            const gan = (pr.gl > pr.gv && p.golesL > p.golesV) || (pr.gl < pr.gv && p.golesL < p.golesV) || (pr.gl == pr.gv && p.golesL == p.golesV); 
 
-                const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
-                tAp.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
-                const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
-                
-                container.innerHTML = `
-                    <div class="titulo-seccion text-emerald-400 border-emerald-400">Mundial 2026 🌍</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tMun)}</div>
-                    <div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div>
-                    <div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div>
-                    <div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div>
-                    <div class="card bg-red-900/10 text-[10px] space-y-1">
-                        <p>• Exacto: +3 pts | Tendencia: +1 pto.</p>
-                        <p>• Acierto Ganador Penales: +1 pto.</p>
-                        <p>• Cuadro Mundial: 16avos (+1), 8vos (+2), 4tos (+3), Semis (+4), Final (+5), Campeón (+10).</p>
-                    </div>`;
-            }
+                            let ptsSumar = 0;
 
-            if (tab === 'titulos') {
-                container.innerHTML = `<div class="titulo-seccion">Títulos</div><div class="card bg-slate-800/40 text-sm space-y-2 mb-6 shadow-inner"><div class="flex justify-between border-b border-slate-700/50 pb-2"><span>Esculapio</span><b class="text-yellow-500">3 🏆</b></div>${USERS.filter(u => u !== "Esculapio").map(u => `<div class="flex justify-between text-slate-400"><span>${u}</span><b>0</b></div>`).join('')}</div><div class="titulo-seccion">Historia</div><div class="card bg-slate-800/40 text-[11px] space-y-2 mb-6 shadow-inner"><div class="flex justify-between border-b border-slate-700/30 pb-1"><span>Apertura 2025</span><b class="text-yellow-500">Esculapio 👑</b></div><div class="flex justify-between border-b border-slate-700/30 pb-1"><span>Clausura 2025</span><b class="text-yellow-500">Esculapio 👑</b></div><div class="flex justify-between"><span>Anual 2025</span><b class="text-yellow-500">Esculapio 👑</b></div></div><div class="titulo-seccion text-red-500 border-red-500 uppercase tracking-tighter">El Cementerio</div><div class="card bg-red-900/10 flex justify-between text-sm items-center"><span>Descenso 2025</span><b class="text-red-500 uppercase font-black">Bauti 🅱️</b></div>`;
-            }
+                            let esEx = 0;
 
-            if (tab === 'aura') {
-                container.innerHTML = `<div class="titulo-seccion italic text-indigo-400 border-indigo-400">EL AURA ✨</div><div class="card p-0 overflow-hidden border-indigo-500/40"><img src="https://media.tycsports.com/files/2026/04/19/942275/paredes-topo-gigio_1440x810_wmk.webp" class="w-full block"><div class="p-4 bg-slate-900"><p class="text-center text-xs font-bold italic text-indigo-300 uppercase tracking-widest leading-relaxed">"Donde hay AURA, el resto solo mira"</p></div></div>`;
-            }
+                            if(ex) { ptsSumar = 3; esEx = 1; } 
 
-            if (tab === 'admin') {
-                const q = await getDocs(collection(db, "partidos"));
-                const pendientes = q.docs.map(d => ({id: d.id, ...d.data()})).filter(p => !p.finalizado);
-                container.innerHTML = `
-                    <div class="card border-red-900/50 mb-6">
-                        <h3 class="text-red-500 font-bold text-[10px] uppercase mb-4 tracking-widest">Nueva Fecha</h3>
-                        <div class="grid grid-cols-2 gap-2 mb-2"><input id="newL" placeholder="Local" class="p-2 bg-slate-900 rounded text-sm text-white"><input id="newV" placeholder="Visitante" class="p-2 bg-slate-900 rounded text-sm text-white"></div>
-                        <div class="grid grid-cols-2 gap-2 mb-2">
-                            <input id="newTorneo" placeholder="Torneo" class="p-2 bg-slate-900 rounded text-[10px] text-white">
-                            <input id="newInst" placeholder="Instancia" class="p-2 bg-slate-900 rounded text-[10px] text-white">
-                        </div>
-                        <div class="grid grid-cols-2 gap-2 mb-2">
-                            <input id="newF" placeholder="Fecha/Hora" class="p-2 bg-slate-900 rounded text-[10px] text-slate-500">
-                            <select id="newTemp" onchange="toggleAdminMundialSelector()" class="p-2 bg-slate-900 rounded text-[10px] text-white">
-                                <option value="Apertura">Liga Regular</option>
-                                <option value="Mundial">Mundial 🌍</option>
-                            </select>
-                        </div>
-                        <div id="div-admin-zona" class="hidden mb-3">
-                            <label class="block text-[8px] uppercase font-bold text-emerald-400 mb-1">Asignar a Grupo (1 al 12):</label>
-                            <select id="newZona" class="w-full p-2 bg-slate-900 rounded text-[10px] text-white border border-emerald-600/30">
-                                <option value="0">Fase Final Directa</option>
-                                ${Array.from({length: 12}, (_, i) => `<option value="${i+1}">Grupo ${String.fromCharCode(65 + i)}</option>`).join('')}
-                            </select>
-                        </div>
-                        <div class="flex items-center gap-2 mb-4"><input type="checkbox" id="isElim"> <label class="text-[10px] uppercase font-bold text-red-400">Eliminación Directa</label></div>
-                        <button onclick="addPartido()" class="w-full bg-red-600 p-2 rounded font-bold text-xs uppercase">Publicar</button>
-                    </div>
-                    <div class="space-y-4 mb-6">
-                        ${pendientes.map(p => `
-                        <div class="card border-slate-700 bg-slate-900/50">
-                            <div class="flex justify-between items-center mb-3">
-                                <div class="text-[10px] font-bold uppercase text-yellow-500">${p.local} vs ${p.visitante} ${p.temporada === 'Mundial' ? `(Mundial - Grupo: ${p.zonaMundial || 'Eliminatoria'})` : ''}</div>
-                                <button onclick="deletePartido('${p.id}')" class="text-[9px] bg-red-900/50 text-red-500 px-2 py-1 rounded">ELIMINAR 🗑️</button>
-                            </div>
-                            <div class="flex gap-1 mb-3">
-                                <button onclick="toggleMuro('${p.id}', ${!p.verOtros})" class="flex-1 ${p.verOtros ? 'bg-slate-600' : 'bg-blue-600'} p-2 rounded text-[9px] font-bold uppercase">${p.verOtros ? 'Abrir Votos' : 'Cerrar Votos'}</button>
+                            else if(gan) { ptsSumar = 1; }
+
+                            
+
+                            if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
+
+                                ptsSumar += 1;
+
+                            }
+
+                            
+
+                            if(p.temporada === "Mundial") {
+
+                                tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
+
+                            } else {
+
+                                tAp[i].pts += ptsSumar; tAn[i].pts += ptsSumar;
+
+                                if(ex) { tAp[i].ex += 1; tAn[i].ex += 1; }
+
+                            }
+
+                        } 
+
+                    }); 
+
+                });
+
+
+
+                USERS.forEach((u, idx) => {
+
+                    const ll = llavesData[u];
+
+                    if(ll) {
+
+                        if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
+
+                        if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
+
+                        if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
+
+                        if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
+
+                        if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
+
+                        if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) {
+
+                            tMun[idx].pts += 10;
+
+                        }
+
+                    }
+
+                });
+
+
+
+                const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
+
+                tAp.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
+
+                const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
+
+                
+
+                container.innerHTML = `
+
+                    <div class="titulo-seccion text-emerald-400 border-emerald-400">Mundial 2026 🌍</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tMun)}</div>
+
+                    <div class="titulo-seccion">Apertura 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAp)}</div>
+
+                    <div class="titulo-seccion">Anual 2026</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div>
+
+                    <div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div>
+
+                    <div class="card bg-red-900/10 text-[10px] space-y-1">
+
+                        <p>• Exacto: +3 pts | Tendencia: +1 pto.</p>
+
+                        <p>• Acierto Ganador Penales: +1 pto.</p>
+
+                        <p>• Cuadro Mundial: 16avos (+1), 8vos (+2), 4tos (+3), Semis (+4), Final (+5), Campeón (+10).</p>
+
+                    </div>`;
+
+            }
                       
 
       
