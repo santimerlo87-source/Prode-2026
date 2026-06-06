@@ -64,7 +64,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        const PUNTOS_BASE = { "Kako": { pts: 57, ex: 10 }, "Esculapio": { pts: 54, ex: 6 }, "Popa": { pts: 50, ex: 8 }, "Fer": { pts: 49, ex: 8 }, "Bauti": { pts: 22, ex: 5 } };
+        const PUNTOS_BASE = { "Kako": { pts: 57, ex: 10 }, "Esculapio": { pts: 54, ex: 6 }, "Popa": { pts: 50, ex: 8 }, "Fer": { pts: 49, ex: 8 }, "Bauti": { pts: 22, ex: 5 }, "Octa": { pts:0, ex:0 } };
         const USERS = Object.keys(PUNTOS_BASE);
         let currentUser = localStorage.getItem('prode_user');
 
@@ -250,7 +250,7 @@
                 } catch(e) { console.log("Error leyendo Firebase en ranking:", e); }
 
                 // 1. APERTURA CONGELADO: Metemos los puntos fijos acá adentro directamente para que no dependa de variables de afuera
-                const APERTURA_FIJO = { "Esculapio": { pts: 73, ex: 10 }, "Kako": { pts: 70, ex: 12 }, "Fer": { pts: 63, ex: 9 }, "Popa": { pts: 57, ex: 8 }, "Bauti": { pts: 24, ex: 5 } };
+                const APERTURA_FIJO = { "Esculapio": { pts: 73, ex: 10 }, "Kako": { pts: 70, ex: 12 }, "Fer": { pts: 63, ex: 9 }, "Popa": { pts: 57, ex: 8 }, "Bauti": { pts: 24, ex: 5 }, "Octa": { pts: 0, ex: 0 } };
 
                 let tAp = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
                 
