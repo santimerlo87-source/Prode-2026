@@ -637,23 +637,26 @@
             showTab('partidos');
         }
 
-        // --- CONFIGURACIÓN DE NOTIFICACIONES PUSH ---
-        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
-        import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
-        const messaging = getMessaging(app);
-        
-        // ACÁ CAMBIÁ ESTE TEXTO POR TU CLAVE VAPID REAL QUE ENCONTRASTE EN FIREBASE:
-        const KEY_PUBLICA_VAPID = "BOxbOmjMrMxCG5JC9qraRfAFP_kFEbBFso4gb5xd_N-vOT4vZ5uOE4vUwM5To_p_YjO2fJG1sj0aFZD1sX0smOY";
-
+        // --- CONFIGURACIÓN DE NOTIFICACIONES PUSH (VERSIÓN SEGURA) ---
         async function solicitarPermisoNotificaciones() {
+            // Verificamos que el usuario esté logueado
             if (typeof currentUser === 'undefined' || !currentUser) return; 
+
             try {
+                // Usamos las herramientas ya cargadas globalmente en las ventanas
+                const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js");
+                const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+
+                const messaging = getMessaging(app);
+                const KEY_PUBLICA_VAPID = "BOxbOmjMrMxCG5JC9qraRfAFP_kFEbBFso4gb5xd_N-vOT4vZ5uOE4vUwM5To_p_YjO2fJG1sj0aFZD1sX0smOY";
+
                 const permiso = await Notification.requestPermission();
                 if (permiso === 'granted') {
                     console.log('Permiso concedido.');
                     const tokenActual = await getToken(messaging, { vapidKey: KEY_PUBLICA_VAPID });
+                    
                     if (tokenActual) {
+                        // Guardamos usando las variables db y currentUser de tu app
                         await setDoc(doc(db, "usuarios_tokens", currentUser), {
                             token: tokenActual,
                             actualizado: new Date().toISOString()
@@ -662,12 +665,15 @@
                     }
                 }
             } catch (error) {
-                console.error('Error al configurar las notificaciones:', error);
+                console.error('Error silencioso en notificaciones:', error);
             }
         }
 
+        // Se ejecuta a los 4 segundos para dar tiempo a que cargue todo tu prode primero
         if ('serviceWorker' in navigator && 'PushManager' in window) {
-            setTimeout(() => { solicitarPermisoNotificaciones(); }, 3000);
+            setTimeout(() => { 
+                solicitarPermisoNotificaciones(); 
+            }, 4000);
         }
     </script>
 </body>
