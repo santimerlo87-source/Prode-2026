@@ -286,12 +286,14 @@
                             
                             const tempNormalizada = p.temporada ? p.temporada.trim().toLowerCase() : "";
 
-                            if (torneoNormalizado === "clausura" || tempNormalizada === "clausura") {
-                               tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
-                            tAn[i].pts += ptsSumar; tAn[i].ex += esEx; // Suma al Clausura y a la Anual acumulada
-                            } else if (torneoNormalizado === "mundial" || tempNormalizada === "mundial") {
-                            tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
-                        }
+if(tempNormalizada === "clausura") {
+    tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
+    tAn[i].pts += ptsSumar; tAn[i].ex += esEx;
+} else if(tempNormalizada === "mundial") {
+    tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
+}
+
+                           
                         } 
                     }); 
                 });
