@@ -280,12 +280,14 @@
                             }
                             
                             // FILTRO INTELIGENTE: Clasifica los puntos dependiendo de cómo cargues el partido en el Admin
-                            if(p.temporada === "Clausura") {
-                                tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
-                                tAn[i].pts += ptsSumar; tAn[i].ex += esEx; // Suma también a la acumulada anual
-                            } else if(p.temporada === "Mundial") {
-                                tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
-                            }
+                            const tempNormalizada = p.temporada ? p.temporada.trim().toLowerCase() : "";
+
+if(tempNormalizada === "clausura") {
+    tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
+    tAn[i].pts += ptsSumar; tAn[i].ex += esEx; // Suma al Clausura y a la Anual
+} else if(tempNormalizada === "mundial") {
+    tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
+}
                         } 
                     }); 
                 });
