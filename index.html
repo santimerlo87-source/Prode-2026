@@ -628,12 +628,6 @@
                 realFinal: cleanArray('adm-fin'), realCampeon: document.getElementById('adm-cam').value.trim()
             }, { merge: true });
             alert("Resultados guardados y rankings computados.");
-            // Botón para mandar las notificaciones a los colgados
-            const btnAlerta = document.createElement('button');
-            btnAlerta.innerText = '📢 Mandar Alerta de Votos';
-            btnAlerta.className = 'bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl font-bold mt-4 block';
-            btnAlerta.onclick = () => enviarRecordatorioVotos();
-            document.getElementById('tab-content').appendChild(btnAlerta);
             showTab('admin');
         };
 
