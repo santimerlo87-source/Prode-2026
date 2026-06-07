@@ -626,6 +626,12 @@
                 realFinal: cleanArray('adm-fin'), realCampeon: document.getElementById('adm-cam').value.trim()
             }, { merge: true });
             alert("Resultados guardados y rankings computados.");
+            // Botón para mandar las notificaciones a los colgados
+            const btnAlerta = document.createElement('button');
+            btnAlerta.innerText = '📢 Mandar Alerta de Votos';
+            btnAlerta.className = 'bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl font-bold mt-4 block';
+            btnAlerta.onclick = () => enviarRecordatorioVotos();
+            document.getElementById('tab-content').appendChild(btnAlerta);
             showTab('admin');
         };
 
@@ -674,6 +680,50 @@
             setTimeout(() => { 
                 solicitarPermisoNotificaciones(); 
             }, 4000);
+
+            // --- FUNCIÓN PARA MANDAR NOTIFICACIONES DESDE EL PANEL DE ADMIN ---
+        window.enviarRecordatorioVotos = async () => {
+            if (confirm("¿Querés mandar la notificación a todos los pibes registrados?")) {
+                try {
+                    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+                    
+                    const querySnapshot = await getDocs(collection(db, "usuarios_tokens"));
+                    let listaTokens = [];
+                    querySnapshot.forEach((doc) => {
+                        if (doc.data().token) listaTokens.push(doc.data().token);
+                    });
+
+                    if (listaTokens.length === 0) {
+                        alert("Todavía ningún usuario registró su celular en la base de datos.");
+                        return;
+                    }
+
+                    // Mandamos la señal a cada dispositivo agendado usando tu clave de servidor
+                    for (const token of listaTokens) {
+                        await fetch(`https://fcm.googleapis.com/fcm/send`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'key=BOxbOmjMrMxCG5JC9qraRfAFP_kFEbBFso4gb5xd_N-vOT4vZ5uOE4vUwM5To_p_YjO2fJG1sj0aFZD1sX0smOY'
+                            },
+                            body: JSON.stringify({
+                                to: token,
+                                notification: {
+                                    title: "¡¿FLACO PENSAS VOTAR?",
+                                    body: "Si no votas te vas a ir al cementerio con bauti. Dicen que culo de muerto suplica ingerto eh",
+                                    icon: "/icono.png"
+                                }
+                            })
+                        });
+                    }
+
+                    alert("¡Alertas enviadas con éxito!");
+                } catch (error) {
+                    console.error("Error enviando notificaciones:", error);
+                    alert("Error al mandar las alertas. Mirá la consola.");
+                }
+            }
+        };
         }
     </script>
 </body>
