@@ -459,6 +459,8 @@
                             <input id="adm-fin" placeholder="Los 2 finalistas reales" class="w-full p-2 bg-slate-900 border border-slate-700 text-xs text-white" value="${mConfig.realFinal ? mConfig.realFinal.join(',') : ''}">
                             <input id="adm-cam" placeholder="Campeón Oficial 🏆" class="w-full p-2 bg-slate-900 border border-yellow-500 font-bold text-yellow-500 text-xs" value="${mConfig.realCamp || ''}">
                             <button onclick="saveGlobalMundial()" class="w-full bg-yellow-600 text-black font-black p-2 rounded uppercase mt-2">Guardar Resultados Cuadro</button>
+                            
+                            <button onclick="enviarRecordatorioVotos()" class="w-full bg-red-600 hover:bg-red-700 text-white font-black p-2 rounded uppercase mt-4 block text-center">📢 Mandar Alerta de Votos</button>
                         </div>
                     </div>`;
             }
