@@ -681,43 +681,20 @@
         }, 1500);
 
 
-        // --- FUNCIÓN DEL BOTÓN ROJO (ENVÍO COMPLETO EXCLUSIVO ONESIGNAL) ---
-        window.enviarRecordatorioVotos = async () => {
-            if (confirm("¿Querés mandar la notificación a todos los pibes registrados?")) {
-                // Poné acá la REST API KEY que te dio OneSignal
-                const ONESIGNAL_REST_KEY = "os_v2_app_xuxw7q4lejb43gbo2xz7vz2c2regkuvcmkdungm5pgkmqtgknelynzxzyezi5iplls4s6dwiq6okgoqxdzo7kushl3p3fu2ika44nsq";
-
-                try {
-                    const response = await fetch("https://onesignal.com/api/v1/notifications", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json; charset=utf-8",
-                            "Authorization": `Basic ${ONESIGNAL_REST_KEY}`
-                        },
-                        body: JSON.stringify({
-                            app_id: ONESIGNAL_APP_ID,
-                            included_segments: ["Total Subscriptions"], // Le manda a absolutamente todos
-                            headings: { "en": "¡¿FLACO PENSAS VOTAR?!", "es": "¡¿FLACO PENSAS VOTAR?!" },
-                            contents: { 
-                                "en": "Si no votas te vas a ir al cementerio con bauti. Dicen que culo de muerto suplica injerto eh", 
-                                "es": "Si no votas te vas a ir al cementerio con bauti. Dicen que culo de muerto suplica injerto eh" 
-                            },
-                            url: "https://santimerlo87-source.github.io/Prode-2026/" // Al tocar la notificación los manda al prode
-                        })
-                    });
-
-                    if (response.ok) {
-                        alert("¡Alertas enviadas con éxito a través de OneSignal!");
-                    } else {
-                        const errData = await response.json();
-                        console.error(errData);
-                        alert("Error en OneSignal. Mirá la consola.");
-                    }
-                } catch (error) {
-                    console.error("Error enviando:", error);
-                }
-            }
-        };
+        // --- FUNCIÓN DEL BOTÓN ROJO (DISPARADOR SEGURO POR ETIQUETA) ---
+        window.enviarRecordatorioVotos = () => {
+            if (confirm("¿Querés disparar la alerta a todos los pibes?")) {
+                OneSignal.push(function() {
+                    // Esto etiqueta al usuario actual, disparando tu automatización en OneSignal
+                    OneSignal.sendTag("enviar_alerta", "true", function(tagsSent) {
+                        alert("¡Alerta disparada! OneSignal la enviará en breve.");
+                        // Borramos la etiqueta a los 5 segundos para que puedas volver a usar el botón después
+                        setTimeout(() => OneSignal.deleteTag("enviar_alerta"), 5000);
+                    });
+                });
+            }
+        };
+        
     </script>
 </body>
 </html> 
