@@ -653,12 +653,11 @@
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            type: "note",
-                            title: "📢 ¡¿FLACO PENSÁS VOTAR?!",
-                            body: "Si no votás te vas a ir al cementerio con Bauti. Dicen que culo de muerto suplica injerto eh"
-                        })
-                    });
-
+    type: "note",
+    title: "📢 ¡¿FLACO PENSÁS VOTAR?!",
+    body: "Si no votás te vas a ir al cementerio con Bauti. Dicen que culo de muerto suplica injerto eh",
+    channel_tag: "prode-pibes-2026" // <--- ¡Esta línea es la que falta!
+})
                     if (response.ok) {
                         alert("¡Alerta enviada correctamente a Pushbullet!");
                     } else {
