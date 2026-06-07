@@ -252,13 +252,28 @@
                 // 1. APERTURA CONGELADO: Puntos fijos de los pibes con Octa incluido en 0
                 const APERTURA_FIJO = { "Esculapio": { pts: 73, ex: 10 }, "Como": { pts: 70, ex: 12 }, "Fer": { pts: 63, ex: 9 }, "Popa": { pts: 57, ex: 8 }, "Bauti": { pts: 24, ex: 5 }, "Octa": { pts: 0, ex: 0 } };
 
+                // --- PARCHE MANUAL SÓLO POR ESTA FECHA ---
+                // Se procesa de forma fija única vez. A partir de la fecha 2, Firebase acumula acá arriba automáticamente.
+                const FECHA_1_MANUAL = { 
+                    "Esculapio": { pts: 1, ex: 0 }, 
+                    "Kako":      { pts: 1, ex: 0 }, 
+                    "Octa":      { pts: 1, ex: 0 }, 
+                    "Fer":       { pts: 3, ex: 1 }, 
+                    "Popa":      { pts: 3, ex: 1 }, 
+                    "Bauti":     { pts: 0, ex: 0 } 
+                };
+
                 let tAp = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
                 
-                // 2. CLAUSURA ACTUAL: Arranca limpio desde 0
-                let tClau = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
+                // 2. CLAUSURA ACTUAL: Arranca con la base de la fecha 1 cargada a mano
+                let tClau = USERS.map(u => ({ nombre: u, pts: FECHA_1_MANUAL[u]?.pts || 0, ex: FECHA_1_MANUAL[u]?.ex || 0 }));
                 
-                // 3. ANUAL ACUMULADA: Suma lo nuevo arriba del Apertura congelado
-                let tAn = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
+                // 3. ANUAL ACUMULADA: Arranca con Apertura + los puntos manuales de hoy
+                let tAn = USERS.map(u => ({ 
+                    nombre: u, 
+                    pts: (APERTURA_FIJO[u]?.pts || 0) + (FECHA_1_MANUAL[u]?.pts || 0), 
+                    ex: (APERTURA_FIJO[u]?.ex || 0) + (FECHA_1_MANUAL[u]?.ex || 0) 
+                }));
                 
                 // 4. MUNDIAL DE RESERVA: En 0
                 let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
