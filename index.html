@@ -714,7 +714,7 @@
             }
         }, 1500); // Revisa cada segundo y medio si cambiaste de pestaña
 
-        // --- FUNCIÓN PARA MANDAR NOTIFICACIONES DESDE EL PANEL DE ADMIN ---
+        // --- FUNCIÓN PARA MANDAR NOTIFICACIONES DESDE EL PANEL DE ADMIN (VERSIÓN ANTIBLOQUEO CORS) ---
         window.enviarRecordatorioVotos = async () => {
             if (confirm("¿Querés mandar la notificación a todos los pibes registrados?")) {
                 try {
@@ -731,13 +731,18 @@
                         return;
                     }
 
-                    // Mandamos la señal a cada dispositivo guardado usando tu clave de servidor
+                    // Usamos un proxy CORS intermedio seguro para que Google no rebote la petición desde el navegador
+                    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
+                    const targetUrl = "https://fcm.googleapis.com/fcm/send";
+
+                    // Mandamos la señal a cada dispositivo guardado
                     for (const token of listaTokens) {
-                        await fetch(`https://fcm.googleapis.com/fcm/send`, {
+                        await fetch(proxyUrl + targetUrl, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                'Authorization': 'key=BOxbOmjMrMxCG5JC9qraRfAFP_kFEbBFso4gb5xd_N-vOT4vZ5uOE4vUwM5To_p_YjO2fJG1sj0aFZD1sX0smOY'
+                                'Authorization': 'key=BOxbOmjMrMxCG5JC9qraRfAFP_kFEbBFso4gb5xd_N-vOT4vZ5uOE4vUwM5To_p_YjO2fJG1sj0aFZD1sX0smOY',
+                                'X-Requested-With': 'XMLHttpRequest'
                             },
                             body: JSON.stringify({
                                 to: token,
@@ -749,6 +754,14 @@
                             })
                         });
                     }
+
+                    alert("¡Alertas enviadas con éxito!");
+                } catch (error) {
+                    console.error("Error enviando notificaciones:", error);
+                    alert("Error al mandar las alertas. Mirá la consola.");
+                }
+            }
+        };
 
                     alert("¡Alertas enviadas con éxito!");
                 } catch (error) {
