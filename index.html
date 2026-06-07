@@ -236,10 +236,18 @@
             }
 
             if (tab === 'ranking') {
-    // --- MODO AUTOMÁTICO ACTIVADO ---
-    // Si necesitás corregir algo manualmente, poné esto en true y ajustá el objeto AJUSTES
-    const USAR_AJUSTE_MANUAL = false; 
-    const AJUSTES = { "Esculapio": 0, "Popa": 0, "Kako": 0, "Fer": 0, "Bauti": 0, "Como": 0, "Octa": 0 };
+    // --- MODO AJUSTE MANUAL ---
+    // Poné USAR_AJUSTE_MANUAL en true para aplicar los cambios de abajo
+    const USAR_AJUSTE_MANUAL = true; 
+    const AJUSTES = { 
+        "Esculapio": { pts: 0, ex: 0 }, 
+        "Popa": { pts: 0, ex: 1 }, 
+        "Kako": { pts: 0, ex: 0 }, 
+        "Fer": { pts: 0, ex: 1 }, 
+        "Bauti": { pts: 0, ex: 0 }, 
+        "Como": { pts: 0, ex: 0 }, 
+        "Octa": { pts: 0, ex: 0 } 
+    };
 
     let partidosFin = [];
     let preds = [];
@@ -294,13 +302,15 @@
         }); 
     });
 
-    // Ajuste manual (Solo si está activado)
+    // Ajuste manual (Ahora suma pts Y ex)
     if (USAR_AJUSTE_MANUAL) {
         USERS.forEach(u => {
             const idx = USERS.indexOf(u);
-            const ptsExtra = AJUSTES[u] || 0;
-            tClau[idx].pts += ptsExtra;
-            tAn[idx].pts += ptsExtra;
+            const extra = AJUSTES[u] || { pts: 0, ex: 0 };
+            tClau[idx].pts += extra.pts;
+            tClau[idx].ex += extra.ex;
+            tAn[idx].pts += extra.pts;
+            tAn[idx].ex += extra.ex;
         });
     }
 
