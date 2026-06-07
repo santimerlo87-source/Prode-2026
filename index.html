@@ -647,9 +647,11 @@
         window.OneSignal = window.OneSignal || [];
         OneSignal.push(function() {
             OneSignal.init({
-                appId: ONESIGNAL_APP_ID,
-                allowLocalhostAsSecureDomain: true,
-            });
+                        appId: ONESIGNAL_APP_ID,
+                        allowLocalhostAsSecureDomain: true,
+                        // Esta línea es la que evita que busque el archivo localmente
+                        path: "https://cdn.onesignal.com/sdks/"
+                    });
 
             // Si el usuario está logueado, lo etiquetamos con su nombre en OneSignal
             if (typeof currentUser !== 'undefined' && currentUser) {
