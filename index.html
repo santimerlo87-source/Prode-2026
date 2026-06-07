@@ -636,6 +636,39 @@
             if(currentUser === "Esculapio") document.getElementById('adminBtn').classList.remove('hidden');
             showTab('partidos');
         }
+
+        // --- CONFIGURACIÓN DE NOTIFICACIONES PUSH ---
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js";
+        import { doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const messaging = getMessaging(app);
+        
+        // ACÁ CAMBIÁ ESTE TEXTO POR TU CLAVE VAPID REAL QUE ENCONTRASTE EN FIREBASE:
+        const KEY_PUBLICA_VAPID = "BOxbOmjMrMxCG5JC9qraRfAFP_kFEbBFso4gb5xd_N-vOT4vZ5uOE4vUwM5To_p_YjO2fJG1sj0aFZD1sX0smOY";
+
+        async function solicitarPermisoNotificaciones() {
+            if (typeof currentUser === 'undefined' || !currentUser) return; 
+            try {
+                const permiso = await Notification.requestPermission();
+                if (permiso === 'granted') {
+                    console.log('Permiso concedido.');
+                    const tokenActual = await getToken(messaging, { vapidKey: KEY_PUBLICA_VAPID });
+                    if (tokenActual) {
+                        await setDoc(doc(db, "usuarios_tokens", currentUser), {
+                            token: tokenActual,
+                            actualizado: new Date().toISOString()
+                        }, { merge: true });
+                        console.log('Token guardado para:', currentUser);
+                    }
+                }
+            } catch (error) {
+                console.error('Error al configurar las notificaciones:', error);
+            }
+        }
+
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+            setTimeout(() => { solicitarPermisoNotificaciones(); }, 3000);
+        }
     </script>
 </body>
 </html>
