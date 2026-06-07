@@ -639,137 +639,86 @@
             showTab('partidos');
         }
 
-        // --- CONFIGURACIÓN DE NOTIFICACIONES PUSH (VERSIÓN SEGURA) ---
-        async function solicitarPermisoNotificaciones() {
-            if (typeof currentUser === 'undefined' || !currentUser) return; 
+       // --- CONFIGURACIÓN DE NOTIFICACIONES CON ONESIGNAL ---
+        // Poné acá el APP ID que te dio OneSignal
+        const ONESIGNAL_APP_ID = "bd2f6fc3-8b22-43cd-982e-d5f3fae742d4";
 
-            try {
-                const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js");
-                const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
+        window.OneSignal = window.OneSignal || [];
+        OneSignal.push(function() {
+            OneSignal.init({
+                appId: ONESIGNAL_APP_ID,
+                allowLocalhostAsSecureDomain: true,
+            });
 
-                const messaging = getMessaging(app);
-                const KEY_PUBLICA_VAPID = "BOxbOmjMrMxCG5JC9qraRfAFP_kFEbBFso4gb5xd_N-vOT4vZ5uOE4vUwM5To_p_YjO2fJG1sj0aFZD1sX0smOY";
+            // Si el usuario está logueado, lo etiquetamos con su nombre en OneSignal
+            if (typeof currentUser !== 'undefined' && currentUser) {
+                OneSignal.setExternalUserId(currentUser);
+            }
+        });
 
-                const permiso = await Notification.requestPermission();
-                if (permiso === 'granted') {
-                    console.log('Permiso concedido.');
-                    
-                    // Registro del Service Worker apuntando a tu subcarpeta de GitHub Pages
-                    const registration = await navigator.serviceWorker.register('/Prode-2026/firebase-messaging-sw.js', {
-                        scope: '/Prode-2026/'
-                    });
+        // Cargar el script oficial de OneSignal
+        const scriptOS = document.createElement('script');
+        scriptOS.src = "https://cdn.onesignal.com/sdks/OneSignalSDK.js";
+        scriptOS.async = true;
+        document.head.appendChild(scriptOS);
 
-                    // Esperamos a que el Service Worker pase de 'instalando' a 'activo'
-                    while (registration.active === null) {
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                    }
 
-                    // Ahora que está activo de verdad, le pedimos el token a Firebase
-                    const tokenActual = await getToken(messaging, { 
-                        vapidKey: KEY_PUBLICA_VAPID,
-                        serviceWorkerRegistration: registration
-                    });
-                    
-                    if (tokenActual) {
-                        await setDoc(doc(db, "usuarios_tokens", currentUser), {
-                            token: tokenActual,
-                            actualizado: new Date().toISOString()
-                        }, { merge: true });
-                        console.log('Token guardado para:', currentUser);
-                    }
-                }
-            } catch (error) {
-                console.error('Error silencioso en notificaciones:', error);
-            }
-        }
+        // --- INYECTOR SEGURO DEL BOTÓN SÓLO EN EL PANEL DE ADMIN ---
+        setInterval(() => {
+            const botonesAdmin = Array.from(document.querySelectorAll('button'));
+            const botonGuardarResultados = botonesAdmin.find(b => b.textContent.includes('Guardar Resultados Cuadro'));
 
-        // Se ejecuta a los 4 segundos para dar tiempo a que cargue todo tu prode primero
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            setTimeout(() => { 
-                solicitarPermisoNotificaciones(); 
-            }, 4000);
-        }
+            if (botonGuardarResultados && !document.getElementById('btn-alerta-votos')) {
+                if (typeof currentUser !== 'undefined' && currentUser === "Esculapio") {
+                    const btnAlerta = document.createElement('button');
+                    btnAlerta.id = 'btn-alerta-votos';
+                    btnAlerta.innerText = '📢 Mandar Alerta de Votos';
+                    btnAlerta.className = 'bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl font-bold mt-4 block w-full text-center cursor-pointer uppercase text-xs';
+                    btnAlerta.onclick = () => enviarRecordatorioVotos();
+                    
+                    botonGuardarResultados.parentNode.insertBefore(btnAlerta, botonGuardarResultados.nextSibling);
+                }
+            }
+        }, 1500);
 
-        // --- INYECTOR SEGURO DEL BOTÓN SÓLO EN EL PANEL DE ADMIN ---
-        setInterval(() => {
-            // Buscamos todos los botones renderizados en la página
-            const botonesAdmin = Array.from(document.querySelectorAll('button'));
-            // Buscamos el texto exacto de tu botón amarillo del cuadro mundial
-            const botonGuardarResultados = botonesAdmin.find(b => b.textContent.includes('Guardar Resultados Cuadro'));
 
-            // Si el panel de admin está en pantalla y tu botón rojo de alertas todavía no se dibujó...
-            if (botonGuardarResultados && !document.getElementById('btn-alerta-votos')) {
-                // Verificación extra por código: que el usuario activo sea el administrador real
-                if (typeof currentUser !== 'undefined' && currentUser === "Esculapio") {
-                    const btnAlerta = document.createElement('button');
-                    btnAlerta.id = 'btn-alerta-votos';
-                    btnAlerta.innerText = '📢 Mandar Alerta de Votos';
-                    btnAlerta.className = 'bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl font-bold mt-4 block w-full text-center cursor-pointer uppercase text-xs';
-                    btnAlerta.onclick = () => enviarRecordatorioVotos();
-                    
-                    // Clavamos el botón único justo abajo del botón amarillo de guardar
-                    botonGuardarResultados.parentNode.insertBefore(btnAlerta, botonGuardarResultados.nextSibling);
-                    console.log("Botón de alertas único colocado con éxito en el panel de Admin.");
-                }
-            }
-        }, 1500); // Revisa cada segundo y medio si cambiaste de pestaña
+        // --- FUNCIÓN DEL BOTÓN ROJO (ENVÍO COMPLETO EXCLUSIVO ONESIGNAL) ---
+        window.enviarRecordatorioVotos = async () => {
+            if (confirm("¿Querés mandar la notificación a todos los pibes registrados?")) {
+                // Poné acá la REST API KEY que te dio OneSignal
+                const ONESIGNAL_REST_KEY = "os_v2_app_xuxw7q4lejb43gbo2xz7vz2c2regkuvcmkdungm5pgkmqtgknelynzxzyezi5iplls4s6dwiq6okgoqxdzo7kushl3p3fu2ika44nsq";
 
-        // --- FUNCIÓN PARA MANDAR NOTIFICACIONES DESDE EL PANEL DE ADMIN (VERSIÓN ANTIBLOQUEO CORS) ---
-        window.enviarRecordatorioVotos = async () => {
-            if (confirm("¿Querés mandar la notificación a todos los pibes registrados?")) {
-                try {
-                    const { collection, getDocs } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
-                    
-                    const querySnapshot = await getDocs(collection(db, "usuarios_tokens"));
-                    let listaTokens = [];
-                    querySnapshot.forEach((doc) => {
-                        if (doc.data().token) listaTokens.push(doc.data().token);
-                    });
+                try {
+                    const response = await fetch("https://onesignal.com/api/v1/notifications", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json; charset=utf-8",
+                            "Authorization": `Basic ${ONESIGNAL_REST_KEY}`
+                        },
+                        body: JSON.stringify({
+                            app_id: ONESIGNAL_APP_ID,
+                            included_segments: ["Total Subscriptions"], // Le manda a absolutamente todos
+                            headings: { "en": "¡¿FLACO PENSAS VOTAR?!", "es": "¡¿FLACO PENSAS VOTAR?!" },
+                            contents: { 
+                                "en": "Si no votas te vas a ir al cementerio con bauti. Dicen que culo de muerto suplica injerto eh", 
+                                "es": "Si no votas te vas a ir al cementerio con bauti. Dicen que culo de muerto suplica injerto eh" 
+                            },
+                            url: "https://santimerlo87-source.github.io/Prode-2026/" // Al tocar la notificación los manda al prode
+                        })
+                    });
 
-                    if (listaTokens.length === 0) {
-                        alert("Todavía ningún usuario registró su celular en la base de datos.");
-                        return;
-                    }
-
-                    // Usamos un proxy CORS intermedio seguro para que Google no rebote la petición desde el navegador
-                    const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-                    const targetUrl = "https://fcm.googleapis.com/fcm/send";
-
-                    // Mandamos la señal a cada dispositivo guardado
-                    for (const token of listaTokens) {
-                        await fetch(proxyUrl + targetUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': 'key=BOxbOmjMrMxCG5JC9qraRfAFP_kFEbBFso4gb5xd_N-vOT4vZ5uOE4vUwM5To_p_YjO2fJG1sj0aFZD1sX0smOY',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                to: token,
-                                notification: {
-                                    title: "¡¿FLACO PENSAS VOTAR?",
-                                    body: "Si no votas te vas a ir al cementerio con bauti. Dicen que culo de muerto suplica injerto eh",
-                                    icon: "/icono.png"
-                                }
-                            })
-                        });
-                    }
-
-                    alert("¡Alertas enviadas con éxito!");
-                } catch (error) {
-                    console.error("Error enviando notificaciones:", error);
-                    alert("Error al mandar las alertas. Mirá la consola.");
-                }
-            }
-        };
-
-                    alert("¡Alertas enviadas con éxito!");
-                } catch (error) {
-                    console.error("Error enviando notificaciones:", error);
-                    alert("Error al mandar las alertas. Mirá la consola.");
-                }
-            }
-        };
-    </script>
+                    if (response.ok) {
+                        alert("¡Alertas enviadas con éxito a través de OneSignal!");
+                    } else {
+                        const errData = await response.json();
+                        console.error(errData);
+                        alert("Error en OneSignal. Mirá la consola.");
+                    }
+                } catch (error) {
+                    console.error("Error enviando:", error);
+                }
+            }
+        };
+    </script>
 </body>
-</html>
+</html> 
