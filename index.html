@@ -236,116 +236,101 @@
             }
 
             if (tab === 'ranking') {
-                // Variables seguras por si Firebase tarda en responder
-                let partidosFin = [];
-                let preds = [];
-                let llavesData = {};
+    // YA NO HAY PARCHES NI AJUSTES MANUALES. 
+    // TODO se calcula sumando lo que está en Firebase.
 
-                try {
-                    const pSnap = await getDocs(collection(db, "partidos"));
-                    partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
-                    const predSnap = await getDocs(collection(db, "predicciones"));
-                    preds = predSnap.docs.map(d => d.data());
-                    const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
-                    llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
-                } catch(e) { console.log("Error leyendo Firebase en ranking:", e); }
+    let partidosFin = [];
+    let preds = [];
+    let llavesData = {};
 
-                // 1. APERTURA CONGELADO: Puntos fijos de los pibes con Octa incluido en 0
-                const APERTURA_FIJO = { "Esculapio": { pts: 73, ex: 10 }, "Kako": { pts: 70, ex: 12 }, "Fer": { pts: 63, ex: 9 }, "Popa": { pts: 57, ex: 8 }, "Bauti": { pts: 24, ex: 5 }, "Octa": { pts: 0, ex: 0 } };
+    try {
+        const pSnap = await getDocs(collection(db, "partidos"));
+        partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
+        const predSnap = await getDocs(collection(db, "predicciones"));
+        preds = predSnap.docs.map(d => d.data());
+        const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
+        llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
+    } catch(e) { console.log("Error leyendo Firebase en ranking:", e); }
 
-                // --- PARCHE MANUAL SÓLO POR ESTA FECHA ---
-                // Se procesa de forma fija única vez. A partir de la fecha 2, Firebase acumula acá arriba automáticamente.
-                const FECHA_1_MANUAL = { 
-                    "Esculapio": { pts: 2, ex: 0 }, 
-                    "Kako":      { pts: 1, ex: 0 }, 
-                    "Octa":      { pts: 1, ex: 0 }, 
-                    "Fer":       { pts: 3, ex: 1 }, 
-                    "Popa":      { pts: 3, ex: 1 }, 
-                    "Bauti":     { pts: 0, ex: 0 } 
-                };
+    // Apertura (histórico fijo)
+    const APERTURA_FIJO = { "Esculapio": { pts: 73, ex: 10 }, "Kako": { pts: 70, ex: 12 }, "Fer": { pts: 63, ex: 9 }, "Popa": { pts: 57, ex: 8 }, "Bauti": { pts: 24, ex: 5 }, "Octa": { pts: 0, ex: 0 } };
 
-                let tAp = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
-                
-                // 2. CLAUSURA ACTUAL: Arranca con la base de la fecha 1 cargada a mano
-                let tClau = USERS.map(u => ({ nombre: u, pts: FECHA_1_MANUAL[u]?.pts || 0, ex: FECHA_1_MANUAL[u]?.ex || 0 }));
-                
-                // 3. ANUAL ACUMULADA: Arranca con Apertura + los puntos manuales de hoy
-                let tAn = USERS.map(u => ({ 
-                    nombre: u, 
-                    pts: (APERTURA_FIJO[u]?.pts || 0) + (FECHA_1_MANUAL[u]?.pts || 0), 
-                    ex: (APERTURA_FIJO[u]?.ex || 0) + (FECHA_1_MANUAL[u]?.ex || 0) 
-                }));
-                
-                // 4. MUNDIAL DE RESERVA: En 0
-                let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
-                
-                // Cómputo de partidos finalizados desde la base de datos
-                partidosFin.forEach(p => { 
-                    preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
-                        const i = USERS.indexOf(pr.user); 
-                        if (i !== -1) { 
-                            const ex = pr.gl == p.golesL && pr.gv == p.golesV; 
-                            const gan = (pr.gl > pr.gv && p.golesL > p.golesV) || (pr.gl < pr.gv && p.golesL < p.golesV) || (pr.gl == pr.gv && p.golesL == p.golesV); 
-                            let ptsSumar = 0;
-                            let esEx = 0;
-                            if(ex) { ptsSumar = 3; esEx = 1; } 
-                            else if(gan) { ptsSumar = 1; }
-                            
-                            if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
-                                ptsSumar += 1;
-                            }
-                            
-                            // SECCIÓN CORREGIDA: Normalización segura sin duplicados
-                            const torneoNormalizado = p.torneo ? p.torneo.trim().toLowerCase() : "";
-                            const tempNormalizada = p.temporada ? p.temporada.trim().toLowerCase() : "";
+    // Inicialización de tablas
+    let tAp = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
+    let tClau = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 })); 
+    let tAn = USERS.map(u => ({ 
+        nombre: u, 
+        pts: (APERTURA_FIJO[u]?.pts || 0), 
+        ex: (APERTURA_FIJO[u]?.ex || 0) 
+    }));
+    let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
+    
+    // Cómputo de partidos (100% Automático)
+    partidosFin.forEach(p => { 
+        preds.filter(pr => pr.partidoId === p.id).forEach(pr => { 
+            const i = USERS.indexOf(pr.user); 
+            if (i !== -1) { 
+                const ex = pr.gl == p.golesL && pr.gv == p.golesV; 
+                const gan = (pr.gl > pr.gv && p.golesL > p.golesV) || (pr.gl < pr.gv && p.golesL < p.golesV) || (pr.gl == pr.gv && p.golesL == p.golesV); 
+                let ptsSumar = 0;
+                let esEx = 0;
+                if(ex) { ptsSumar = 3; esEx = 1; } 
+                else if(gan) { ptsSumar = 1; }
+                
+                if(p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
+                    ptsSumar += 1;
+                }
+                
+                const torneo = p.torneo?.trim().toLowerCase() || "";
+                const temp = p.temporada?.trim().toLowerCase() || "";
 
-                            // Comprueba si se cargó como "clausura" en cualquiera de los dos campos
-                            if(torneoNormalizado === "clausura" || tempNormalizada === "clausura") {
-                                tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
-                                tAn[i].pts += ptsSumar; tAn[i].ex += esEx; // Computa directo al Anual acumulado
-                            } else if(torneoNormalizado === "mundial" || tempNormalizada === "mundial") {
-                                tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
-                            }
-                        } 
-                    }); 
-                });
+                if(torneo === "clausura" || temp === "clausura") {
+                    tClau[i].pts += ptsSumar; 
+                    tClau[i].ex += esEx;
+                    tAn[i].pts += ptsSumar; 
+                    tAn[i].ex += esEx;
+                } else if(torneo === "mundial" || temp === "mundial") {
+                    tMun[i].pts += ptsSumar; 
+                    tMun[i].ex += esEx;
+                }
+            } 
+        }); 
+    });
 
-                // Cómputo seguro de las llaves del mundial (Evita que la app se tilde si mConfig no está cargada)
-                if (typeof mConfig !== 'undefined') {
-                    USERS.forEach((u, idx) => {
-                        const ll = llavesData[u];
-                        if(ll) {
-                            if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
-                            if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
-                            if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
-                            if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
-                            if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
-                            if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) {
-                                tMun[idx].pts += 10;
-                            }
-                        }
-                    });
-                }
+    // Cómputo de llaves mundial
+    if (typeof mConfig !== 'undefined') {
+        USERS.forEach((u, idx) => {
+            const ll = llavesData[u];
+            if(ll) {
+                if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
+                if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
+                if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
+                if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
+                if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
+                if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) {
+                    tMun[idx].pts += 10;
+                }
+            }
+        });
+    }
 
-                // Ordenamos las 4 tablas por puntaje de mayor a menor
-                const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
-                tAp.sort(sortF); tClau.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
-                
-                const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
-                
-                // Renderizado en pantalla con las 4 tablas ordenadas
-                container.innerHTML = `
-                    <div class="titulo-seccion text-yellow-500 border-yellow-500">Clausura 2026 ⚽ (EN VIVO)</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tClau)}</div>
-                    <div class="titulo-seccion text-slate-400 border-slate-700">Apertura 2026 🔒 (Finalizado - Ganador: Esculapio)</div><div class="card bg-slate-800/40 px-2 shadow-inner opacity-60">${renderT(tAp)}</div>
-                    <div class="titulo-seccion text-cyan-400 border-cyan-400">Anual 2026 🔥 (Acumulada)</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div>
-                    <div class="titulo-seccion text-emerald-400 border-emerald-400">Mundial 2026 🌍 (Próximamente)</div><div class="card bg-slate-800/40 px-2 shadow-inner opacity-75">${renderT(tMun)}</div>
-                    <div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div>
-                    <div class="card bg-red-900/10 text-[10px] space-y-1">
-                        <p>• Exacto: +3 pts | Tendencia: +1 pto.</p>
-                        <p>• Acierto Ganador Penales: +1 pto.</p>
-                        <p>• Cuadro Mundial: 16avos (+1), 8vos (+2), 4tos (+3), Semis (+4), Final (+5), Campeón (+10).</p>
-                    </div>`;
-            }
+    // Ordenamiento y renderizado
+    const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
+    tAp.sort(sortF); tClau.sort(sortF); tAn.sort(sortF); tMun.sort(sortF);
+    
+    const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
+    
+    container.innerHTML = `
+        <div class="titulo-seccion text-yellow-500 border-yellow-500">Clausura 2026 ⚽ (EN VIVO)</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tClau)}</div>
+        <div class="titulo-seccion text-slate-400 border-slate-700">Apertura 2026 🔒 (Finalizado)</div><div class="card bg-slate-800/40 px-2 shadow-inner opacity-60">${renderT(tAp)}</div>
+        <div class="titulo-seccion text-cyan-400 border-cyan-400">Anual 2026 🔥 (Acumulada)</div><div class="card bg-slate-800/40 px-2 shadow-inner">${renderT(tAn)}</div>
+        <div class="titulo-seccion text-emerald-400 border-emerald-400">Mundial 2026 🌍</div><div class="card bg-slate-800/40 px-2 shadow-inner opacity-75">${renderT(tMun)}</div>
+        <div class="titulo-seccion text-red-500 border-red-500">Reglas 🚨</div>
+        <div class="card bg-red-900/10 text-[10px] space-y-1">
+            <p>• Exacto: +3 pts | Tendencia: +1 pto.</p>
+            <p>• Acierto Ganador Penales: +1 pto.</p>
+        </div>`;
+}
                       
 
       
