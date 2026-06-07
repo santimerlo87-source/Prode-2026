@@ -653,7 +653,17 @@
                 const permiso = await Notification.requestPermission();
                 if (permiso === 'granted') {
                     console.log('Permiso concedido.');
-                    const tokenActual = await getToken(messaging, { vapidKey: KEY_PUBLICA_VAPID });
+                    
+                    // Registro explícito del Service Worker apuntando a tu subcarpeta de GitHub Pages
+                    const registration = await navigator.serviceWorker.register('/Prode-2026/firebase-messaging-sw.js', {
+                        scope: '/Prode-2026/'
+                    });
+
+                    // Pasamos la registración corregida para evitar el error 404
+                    const tokenActual = await getToken(messaging, { 
+                        vapidKey: KEY_PUBLICA_VAPID,
+                        serviceWorkerRegistration: registration
+                    });
                     
                     if (tokenActual) {
                         await setDoc(doc(db, "usuarios_tokens", currentUser), {
@@ -677,14 +687,14 @@
 
         // --- INYECTOR SEGURO DEL BOTÓN SÓLO EN EL PANEL DE ADMIN ---
         setInterval(() => {
-            // Buscamos todos los botones de la página
+            // Buscamos todos los botones renderizados en la página
             const botonesAdmin = Array.from(document.querySelectorAll('button'));
-            // CORRECCIÓN: Buscamos el texto exacto del botón amarillo de tu panel de admin
+            // Buscamos el texto exacto de tu botón amarillo del cuadro mundial
             const botonGuardarResultados = botonesAdmin.find(b => b.textContent.includes('Guardar Resultados Cuadro'));
 
-            // Si el panel de admin está renderizado y tu botón rojo todavía no se dibujó...
+            // Si el panel de admin está en pantalla y tu botón rojo de alertas todavía no se dibujó...
             if (botonGuardarResultados && !document.getElementById('btn-alerta-votos')) {
-                // Verificación extra: que el usuario activo sea el admin real
+                // Verificación extra por código: que el usuario activo sea el administrador real
                 if (typeof currentUser !== 'undefined' && currentUser === "Esculapio") {
                     const btnAlerta = document.createElement('button');
                     btnAlerta.id = 'btn-alerta-votos';
@@ -692,12 +702,12 @@
                     btnAlerta.className = 'bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl font-bold mt-4 block w-full text-center cursor-pointer uppercase text-xs';
                     btnAlerta.onclick = () => enviarRecordatorioVotos();
                     
-                    // Lo clavamos justo abajo del botón amarillo
+                    // Clavamos el botón único justo abajo del botón amarillo de guardar
                     botonGuardarResultados.parentNode.insertBefore(btnAlerta, botonGuardarResultados.nextSibling);
-                    console.log("Botón de alertas colocado con éxito en el panel de Admin.");
+                    console.log("Botón de alertas único colocado con éxito en el panel de Admin.");
                 }
             }
-        }, 1500); // Revisa cada un segundo y medio para reaccionar rápido al cambio de pestaña
+        }, 1500); // Revisa cada segundo y medio si cambiaste de pestaña
 
         // --- FUNCIÓN PARA MANDAR NOTIFICACIONES DESDE EL PANEL DE ADMIN ---
         window.enviarRecordatorioVotos = async () => {
@@ -716,7 +726,7 @@
                         return;
                     }
 
-                    // Mandamos la señal a cada dispositivo agendado usando tu clave de servidor
+                    // Mandamos la señal a cada dispositivo guardado usando tu clave de servidor
                     for (const token of listaTokens) {
                         await fetch(`https://fcm.googleapis.com/fcm/send`, {
                             method: 'POST',
