@@ -21,6 +21,7 @@
         .grupo-btn { background: linear-gradient(135deg, #1d4ed8 0%, #b91c1c 50%, #15803d 100%); transition: transform 0.2s; }
         .grupo-btn:hover { transform: scale(1.03); }
     </style>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 </head>
 <body>
     <div id="app" class="max-w-md mx-auto p-4">
@@ -656,11 +657,7 @@
             }
         });
 
-        // Cargar el script oficial de OneSignal
-        const scriptOS = document.createElement('script');
-        scriptOS.src = "https://cdn.onesignal.com/sdks/OneSignalSDK.js";
-        scriptOS.async = true;
-        document.head.appendChild(scriptOS);
+       
 
 
         // --- INYECTOR SEGURO DEL BOTÓN SÓLO EN EL PANEL DE ADMIN ---
