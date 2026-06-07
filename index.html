@@ -679,6 +679,29 @@
             }, 4000);
         }
 
+        // --- INYECTOR SEGURO DEL BOTÓN SÓLO EN EL PANEL DE ADMIN ---
+        setInterval(() => {
+            // Buscamos tu botón de guardar resultados que ya existe en tu panel de admin
+            const botonesAdmin = Array.from(document.querySelectorAll('button'));
+            const botonGuardarResultados = botonesAdmin.find(b => b.textContent.includes('Resultados guardados'));
+
+            // Si el panel de admin está cargado en pantalla y el botón de alerta aún no se dibujó...
+            if (botonGuardarResultados && !document.getElementById('btn-alerta-votos')) {
+                // Verificación extra de seguridad por código: que el usuario sea Esculapio
+                if (typeof currentUser !== 'undefined' && currentUser === "Esculapio") {
+                    const btnAlerta = document.createElement('button');
+                    btnAlerta.id = 'btn-alerta-votos';
+                    btnAlerta.innerText = '📢 Mandar Alerta de Votos';
+                    btnAlerta.className = 'bg-red-600 hover:bg-red-700 text-white p-3 rounded-xl font-bold mt-4 block w-full text-center cursor-pointer';
+                    btnAlerta.onclick = () => enviarRecordatorioVotos();
+                    
+                    // Lo metemos justo abajo del botón de guardar resultados de admin
+                    botonGuardarResultados.parentNode.insertBefore(btnAlerta, botonGuardarResultados.nextSibling);
+                    console.log("Botón de alertas colocado en el panel de Admin.");
+                }
+            }
+        }, 2000); // Revisa cada 2 segundos si abriste la pestaña de administración
+
         // --- FUNCIÓN PARA MANDAR NOTIFICACIONES DESDE EL PANEL DE ADMIN ---
         window.enviarRecordatorioVotos = async () => {
             if (confirm("¿Querés mandar la notificación a todos los pibes registrados?")) {
