@@ -249,18 +249,18 @@
                     llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
                 } catch(e) { console.log("Error leyendo Firebase en ranking:", e); }
 
-                // 1. APERTURA CONGELADO: Metemos los puntos fijos acá adentro directamente para que no dependa de variables de afuera
-                const APERTURA_FIJO = { "Esculapio": { pts: 73, ex: 10 }, "Kako": { pts: 70, ex: 12 }, "Fer": { pts: 63, ex: 9 }, "Popa": { pts: 57, ex: 8 }, "Bauti": { pts: 24, ex: 5 }, "Octa": { pts: 0, ex: 0 } };
+                // 1. APERTURA CONGELADO: Puntos fijos de los pibes con Octa incluido en 0
+                const APERTURA_FIJO = { "Esculapio": { pts: 73, ex: 10 }, "Como": { pts: 70, ex: 12 }, "Fer": { pts: 63, ex: 9 }, "Popa": { pts: 57, ex: 8 }, "Bauti": { pts: 24, ex: 5 }, "Octa": { pts: 0, ex: 0 } };
 
                 let tAp = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
                 
-                // 2. CLAUSURA ACTUAL: Va desde 0 y solo sumará lo nuevo
+                // 2. CLAUSURA ACTUAL: Arranca limpio desde 0
                 let tClau = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
-                // 3. ANUAL ACUMULADA: Arranca con la base del Apertura congelado y sumará lo nuevo encima
+                // 3. ANUAL ACUMULADA: Suma lo nuevo arriba del Apertura congelado
                 let tAn = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
                 
-                // 4. MUNDIAL DE RESERVA: En 0 para más adelante
+                // 4. MUNDIAL DE RESERVA: En 0
                 let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
                 
                 // Cómputo de partidos finalizados desde la base de datos
@@ -279,39 +279,37 @@
                                 ptsSumar += 1;
                             }
                             
-                            // FILTRO INTELIGENTE: Clasifica los puntos dependiendo de cómo cargues el partido en el Admin
-                            const tempNormalizada = p.temporada ? p.temporada.trim().toLowerCase() : "";
-
+                            // SECCIÓN CORREGIDA: Normalización segura sin duplicados
                             const torneoNormalizado = p.torneo ? p.torneo.trim().toLowerCase() : "";
-                            
                             const tempNormalizada = p.temporada ? p.temporada.trim().toLowerCase() : "";
 
-if(tempNormalizada === "clausura") {
-    tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
-    tAn[i].pts += ptsSumar; tAn[i].ex += esEx; // Suma al Clausura y a la Anual
-} else if(tempNormalizada === "mundial") {
-    tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
-}
-
-                           
+                            // Comprueba si se cargó como "clausura" en cualquiera de los dos campos
+                            if(torneoNormalizado === "clausura" || tempNormalizada === "clausura") {
+                                tClau[i].pts += ptsSumar; tClau[i].ex += esEx;
+                                tAn[i].pts += ptsSumar; tAn[i].ex += esEx; // Computa directo al Anual acumulado
+                            } else if(torneoNormalizado === "mundial" || tempNormalizada === "mundial") {
+                                tMun[i].pts += ptsSumar; tMun[i].ex += esEx;
+                            }
                         } 
                     }); 
                 });
 
-                // Cómputo de las llaves del mundial (Sigue funcionando igual para el futuro)
-                USERS.forEach((u, idx) => {
-                    const ll = llavesData[u];
-                    if(ll) {
-                        if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
-                        if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
-                        if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
-                        if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
-                        if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
-                        if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) {
-                            tMun[idx].pts += 10;
+                // Cómputo seguro de las llaves del mundial (Evita que la app se tilde si mConfig no está cargada)
+                if (typeof mConfig !== 'undefined') {
+                    USERS.forEach((u, idx) => {
+                        const ll = llavesData[u];
+                        if(ll) {
+                            if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
+                            if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
+                            if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
+                            if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
+                            if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
+                            if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) {
+                                tMun[idx].pts += 10;
+                            }
                         }
-                    }
-                });
+                    });
+                }
 
                 // Ordenamos las 4 tablas por puntaje de mayor a menor
                 const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
