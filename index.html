@@ -654,12 +654,17 @@
                 if (permiso === 'granted') {
                     console.log('Permiso concedido.');
                     
-                    // Registro explícito del Service Worker apuntando a tu subcarpeta de GitHub Pages
+                    // Registro del Service Worker apuntando a tu subcarpeta de GitHub Pages
                     const registration = await navigator.serviceWorker.register('/Prode-2026/firebase-messaging-sw.js', {
                         scope: '/Prode-2026/'
                     });
 
-                    // Pasamos la registración corregida para evitar el error 404
+                    // Esperamos a que el Service Worker pase de 'instalando' a 'activo'
+                    while (registration.active === null) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+
+                    // Ahora que está activo de verdad, le pedimos el token a Firebase
                     const tokenActual = await getToken(messaging, { 
                         vapidKey: KEY_PUBLICA_VAPID,
                         serviceWorkerRegistration: registration
