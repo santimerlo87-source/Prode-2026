@@ -645,11 +645,9 @@
 
         // --- CONFIGURACIÓN DE NOTIFICACIONES PUSH (VERSIÓN SEGURA) ---
         async function solicitarPermisoNotificaciones() {
-            // Verificamos que el usuario esté logueado
             if (typeof currentUser === 'undefined' || !currentUser) return; 
 
             try {
-                // Usamos las herramientas ya cargadas globalmente en las ventanas
                 const { getMessaging, getToken } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-messaging.js");
                 const { doc, setDoc } = await import("https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js");
 
@@ -662,7 +660,6 @@
                     const tokenActual = await getToken(messaging, { vapidKey: KEY_PUBLICA_VAPID });
                     
                     if (tokenActual) {
-                        // Guardamos usando las variables db y currentUser de tu app
                         await setDoc(doc(db, "usuarios_tokens", currentUser), {
                             token: tokenActual,
                             actualizado: new Date().toISOString()
@@ -680,8 +677,9 @@
             setTimeout(() => { 
                 solicitarPermisoNotificaciones(); 
             }, 4000);
+        }
 
-            // --- FUNCIÓN PARA MANDAR NOTIFICACIONES DESDE EL PANEL DE ADMIN ---
+        // --- FUNCIÓN PARA MANDAR NOTIFICACIONES DESDE EL PANEL DE ADMIN ---
         window.enviarRecordatorioVotos = async () => {
             if (confirm("¿Querés mandar la notificación a todos los pibes registrados?")) {
                 try {
@@ -724,7 +722,6 @@
                 }
             }
         };
-        }
     </script>
 </body>
 </html>
