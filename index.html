@@ -242,66 +242,78 @@
 
     try {
         const pSnap = await getDocs(collection(db, "partidos"));
-        // Filtramos solo los que vos marcaste como finalizados en el panel
         partidosFin = pSnap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => p.finalizado);
-        
         const predSnap = await getDocs(collection(db, "predicciones"));
         preds = predSnap.docs.map(d => d.data());
-        
         const llavesSnap = await getDocs(collection(db, "mundial_llaves"));
         llavesSnap.forEach(d => { llavesData[d.id] = d.data(); });
-    } catch(e) { console.error("Error al cargar datos:", e); }
+    } catch(e) { console.error("Error en ranking:", e); }
 
+    // APERTURA FIJO (NO SE MUEVE)
     const APERTURA_FIJO = { "Esculapio": { pts: 73, ex: 10 }, "Kako": { pts: 70, ex: 12 }, "Fer": { pts: 63, ex: 9 }, "Popa": { pts: 57, ex: 8 }, "Bauti": { pts: 24, ex: 5 }, "Octa": { pts: 0, ex: 0 } };
 
-    // Inicialización
+    // Inicialización de las 4 tablas
+    let tAp = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
+    let tAn = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 }));
+    let tClau = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 })); 
     let tMun = USERS.map(u => ({ nombre: u, pts: 0, ex: 0 }));
-    let tClau = USERS.map(u => ({ nombre: u, pts: APERTURA_FIJO[u]?.pts || 0, ex: APERTURA_FIJO[u]?.ex || 0 })); // Ejemplo si quisieras sumar
 
-    // Cómputo de partidos (Aquí ocurre la magia)
+    // Cómputo Automático solo para Mundial
     partidosFin.forEach(p => {
-        // Buscamos todas las predicciones de este partido
-        const predsPartido = preds.filter(pr => pr.partidoId === p.id);
-        
-        predsPartido.forEach(pr => {
-            const i = USERS.indexOf(pr.user);
-            if (i === -1) return;
-
-            // Lógica de puntos
-            const ex = (Number(pr.gl) === Number(p.golesL) && Number(pr.gv) === Number(p.golesV));
-            const gan = (Number(pr.gl) > Number(pr.gv) && Number(p.golesL) > Number(p.golesV)) || 
-                        (Number(pr.gl) < Number(pr.gv) && Number(p.golesL) < Number(p.golesV)) || 
-                        (Number(pr.gl) === Number(pr.gv) && Number(p.golesL) === Number(p.golesV));
-
-            let pts = 0;
-            let exCount = 0;
-
-            if (ex) { pts = 3; exCount = 1; }
-            else if (gan) { pts = 1; }
-
-            // Penales
-            if (p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
-                pts += 1;
-            }
-
-            // Suma al torneo correspondiente
-            if (p.temporada === "Mundial") {
-                tMun[i].pts += pts;
-                tMun[i].ex += exCount;
-            }
-        });
+        // Solo computamos si es temporada Mundial
+        if (p.temporada?.trim().toLowerCase() === "mundial") {
+            preds.filter(pr => pr.partidoId === p.id).forEach(pr => {
+                const i = USERS.indexOf(pr.user);
+                if (i !== -1) {
+                    const ex = (Number(pr.gl) === Number(p.golesL) && Number(pr.gv) === Number(p.golesV));
+                    const gan = (Number(pr.gl) > Number(pr.gv) && Number(p.golesL) > Number(p.golesV)) || 
+                                (Number(pr.gl) < Number(pr.gv) && Number(p.golesL) < Number(p.golesV)) || 
+                                (Number(pr.gl) === Number(pr.gv) && Number(p.golesL) === Number(p.golesV));
+                    
+                    if (ex) { tMun[i].pts += 3; tMun[i].ex += 1; }
+                    else if (gan) { tMun[i].pts += 1; }
+                    
+                    if (p.eliminacion && p.huboPenales && pr.usaPenales && pr.penales === p.ganadorPenales) {
+                        tMun[i].pts += 1;
+                    }
+                }
+            });
+        }
     });
 
-    // Ordenamiento y renderizado
-    const sortF = (a, b) => b.pts - a.pts || b.ex - a.ex;
-    tMun.sort(sortF);
+    // Cómputo de Llaves Mundial
+    if (typeof mConfig !== 'undefined') {
+        USERS.forEach((u, idx) => {
+            const ll = llavesData[u];
+            if(ll) {
+                if(ll.inst16 && mConfig.real16) ll.inst16.forEach(eq => { if(mConfig.real16.includes(eq.trim())) tMun[idx].pts += 1; });
+                if(ll.inst8 && mConfig.real8) ll.inst8.forEach(eq => { if(mConfig.real8.includes(eq.trim())) tMun[idx].pts += 2; });
+                if(ll.inst4 && mConfig.real4) ll.inst4.forEach(eq => { if(mConfig.real4.includes(eq.trim())) tMun[idx].pts += 3; });
+                if(ll.inst2 && mConfig.real2) ll.inst2.forEach(eq => { if(mConfig.real2.includes(eq.trim())) tMun[idx].pts += 4; });
+                if(ll.instFinal && mConfig.realFinal) ll.instFinal.forEach(eq => { if(mConfig.realFinal.includes(eq.trim())) tMun[idx].pts += 5; });
+                if(ll.campeon && mConfig.realCampeon && ll.campeon.trim().toLowerCase() === mConfig.realCampeon.trim().toLowerCase()) { tMun[idx].pts += 10; }
+            }
+        });
+    }
 
-    const renderT = (d) => `<table class="w-full text-xs">${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-2">${i+1} ${t.nombre}</td><td class="text-right font-bold text-yellow-500">${t.pts} pts</td></tr>`).join('')}</table>`;
-
+    // Ordenamiento
+    const sortF = (a,b) => b.pts - a.pts || b.ex - a.ex;
+    tAp.sort(sortF); tAn.sort(sortF); tClau.sort(sortF); tMun.sort(sortF);
+    
+    const renderT = (d) => `<table class="w-full text-xs"><tr class="text-slate-500 uppercase text-[9px] font-bold"><th class="text-left py-2">Jugador</th><th class="text-center">Pts</th><th class="text-center">Ex</th></tr>${d.map((t, i) => `<tr class="border-t border-slate-700/50"><td class="py-3">${i === 0 ? '👑' : i === d.length-1 ? '🅱️' : i+1} ${t.nombre}</td><td class="text-center font-bold text-yellow-500 text-base">${t.pts}</td><td class="text-center text-slate-500">${t.ex}</td></tr>`).join('')}</table>`;
+    
     container.innerHTML = `
-        <div class="titulo-seccion text-emerald-400 border-emerald-400">Ranking Mundial 🌍</div>
-        <div class="card bg-slate-900/80 px-4">${renderT(tMun)}</div>
-        <div class="mt-4 p-2 text-[9px] text-slate-500 italic">Los puntos se calculan automáticamente al marcar 'Finalizado' en cada partido.</div>
+        <div class="titulo-seccion text-emerald-400 border-emerald-400">Mundial 2026 🌍 (EN VIVO)</div>
+        <div class="card bg-slate-900/80 px-2 shadow-inner">${renderT(tMun)}</div>
+        
+        <div class="titulo-seccion text-yellow-500 border-yellow-500">Clausura 2026 ⚽ (Próximamente)</div>
+        <div class="card bg-slate-800/40 px-2 shadow-inner opacity-50">${renderT(tClau)}</div>
+        
+        <div class="titulo-seccion text-slate-400 border-slate-700">Apertura 2026 🔒 (Finalizado)</div>
+        <div class="card bg-slate-800/40 px-2 shadow-inner opacity-60">${renderT(tAp)}</div>
+        
+        <div class="titulo-seccion text-cyan-400 border-cyan-400">Anual 2026 🔥 (Acumulada)</div>
+        <div class="card bg-slate-800/40 px-2 shadow-inner opacity-80">${renderT(tAn)}</div>
     `;
 }
                       
